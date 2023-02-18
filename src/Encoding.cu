@@ -63,9 +63,9 @@ T div_round_up(T val, T divisor) {
 // }
 
 
-Lattice::Lattice(const int capacity, const int pos_dim, const int nr_levels, const int nr_feat_per_level):
-    m_capacity(capacity),
+Lattice::Lattice(const int pos_dim, const int capacity, const int nr_levels, const int nr_feat_per_level):
     m_expected_pos_dim(pos_dim),
+    m_capacity(capacity),
     m_nr_levels(nr_levels),
     m_nr_feat_per_level(nr_feat_per_level)
     {

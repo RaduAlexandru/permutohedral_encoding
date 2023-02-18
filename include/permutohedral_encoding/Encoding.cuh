@@ -134,7 +134,7 @@ private:
     void check_positions_elevated(const torch::Tensor& positions_elevated);
     void check_values(const torch::Tensor& values);
     void check_positions_and_values(const torch::Tensor& positions_raw, const torch::Tensor& values);
-    void update_impl();
+    // void update_impl();
 
     // std::string m_name;
     // int m_lvl; //lvl of coarsenes of the lattice, it starts at 1 for the finest lattice and increases by 1 for each applicaiton for coarsen()
@@ -143,15 +143,15 @@ private:
     // std::shared_ptr<LatticeGPU> m_impl;
     // torch::Tensor m_positions; //positions that were used originally for creating the lattice
     // static int m_expected_position_dimensions;
-    int m_capacity;
-    int m_expected_pos_dim;
-    int m_nr_levels;
-    int m_nr_feat_per_level;
+    // int m_expected_pos_dim;
+    // int m_capacity;
+    // int m_nr_levels;
+    // int m_nr_feat_per_level;
 
    
-    std::vector<float> m_sigmas;
-    torch::Tensor m_sigmas_tensor;
-    std::vector< std::pair<float, int> > m_sigmas_val_and_extent; //for each sigma we store here the value and the number of dimensions it affect. In the Gui we modify this one
+    // std::vector<float> m_sigmas;
+    // torch::Tensor m_sigmas_tensor;
+    // std::vector< std::pair<float, int> > m_sigmas_val_and_extent; //for each sigma we store here the value and the number of dimensions it affect. In the Gui we modify this one
 
 
 

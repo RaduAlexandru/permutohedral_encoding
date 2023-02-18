@@ -2,9 +2,9 @@
 
 # print("modules in path", __file__)
 
-import gc
-import importlib
-import warnings
+# import gc
+# import importlib
+# import warnings
 
 import torch
 
@@ -76,7 +76,74 @@ import torch
 # 	return tensor
 
 
-class Encoding(torch.nn.Module):
-    def __init__(self):
-        print("making")
+# class Encoding(torch.nn.Module):
+#     def __init__(self):
+#         print("making")
+
+
+class PermutoEncoding(torch.nn.Module):
+    def __init__(self, pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, appply_random_shift_per_level, concat_points, concat_points_scaling):
+        super(PermutoEncoding, self).__init__()
+		self.pos_dim=pos_dim 
+		self.capacity=capacity 
+		self.nr_levels=nr_levels 
+		self.nr_feat_per_level=nr_feat_per_level
+		self.scale_per_level=scale_per_level
+		self.appply_random_shift_per_level=appply_random_shift_per_level
+		self.concat_points=concat_points 
+		self.concat_points_scaling=concat_points_scaling
+
+		#create hashmap values
+		self.values=torch.randn( capacity, nr_levels, nr_feat_per_level )*1e-5
+		self.values=self.values.permute(1,0,2).contiguous() #makes it nr_levels x capacity x nr_feat
+		self.values=torch.nn.Parameter(self.values) 
+
+		#each levels of the hashamp can be randomly shifted so that we minimize collisions
+		self.random_shift_per_level=torch.empty((1))
+		if appply_random_shift_per_level:
+			self.random_shift_per_level=torch.randn( nr_levels, 3)*10
+			self.random_shift_per_level=torch.nn.Parameter( random_shift_per_level ) #we make it a parameter just so it gets saved when we checkpoint
+		
+		
+    def forward(self, positions, anneal_window):
+
+        nr_positions=positions.shape[0]
+        
+
+        require_values_grad= self.values.requires_grad and torch.is_grad_enabled()
+        require_positions_grad=  positions.requires_grad and torch.is_grad_enabled()
+
+        sliced_values, splatting_indices, splatting_weights= PermutoEncodingFunc.apply(self.values, self.scale_per_level, positions, self.random_shift_per_level, anneal_window, self.concat_points, self.concat_points_scaling, require_values_grad, require_positions_grad)
+
+        sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
+
+        return sliced_values, splatting_indices, splatting_weights 
+
+
+
+# class SliceLatticeWithCollisionsFastMRMonolithicModule(torch.nn.Module):
+#     def __init__(self):
+#         super(SliceLatticeWithCollisionsFastMRMonolithicModule, self).__init__()
+#     def forward(self, lattice_values_monolithic, scale_factor, lattice_structure, positions, random_shift_monolithic, anneal_window, concat_points, points_scaling):
+
+#         nr_positions=positions.shape[0]
+#         nr_resolutions=lattice_values_monolithic.shape[0]
+#         nr_lattice_vertices=lattice_values_monolithic.shape[1]
+#         nr_lattice_features=lattice_values_monolithic.shape[2]
+
+#         # require_lattice_values_grad= self.training and lattice_values_monolithic.requires_grad and torch.is_grad_enabled()
+#         # require_positions_grad= self.training and positions.requires_grad and torch.is_grad_enabled()
+#         require_lattice_values_grad= lattice_values_monolithic.requires_grad and torch.is_grad_enabled()
+#         require_positions_grad=  positions.requires_grad and torch.is_grad_enabled()
+#         # require_lattice_values_grad=True
+
+#         sliced_values_monolithic, splatting_indices, splatting_weights= SliceLatticeWithCollisionFastMRMonolithic.apply(lattice_values_monolithic, scale_factor, lattice_structure, positions, random_shift_monolithic, anneal_window, concat_points, points_scaling, require_lattice_values_grad, require_positions_grad)
+
+#         # print("sliced_values_monolithic",sliced_values_monolithic)
+#         # print("sliced_values_monolithic shape",sliced_values_monolithic.shape)
+#         # print("sliced_values_monolithic last 3 dimensions",sliced_values_monolithic[23:25, :,:])
+
+#         sliced_values_monolithic=sliced_values_monolithic.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
+
+#         return sliced_values_monolithic, splatting_indices, splatting_weights
 
