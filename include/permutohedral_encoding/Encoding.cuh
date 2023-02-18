@@ -124,10 +124,11 @@ public:
    
 
 private:
-    Lattice(const std::string config_file);
-    Lattice(const std::string config_file, const std::string name);
-    Lattice(Lattice* other);
-    void init_params(const std::string config_file);
+    // Lattice(const std::string config_file);
+    // Lattice(const std::string config_file, const std::string name);
+    // Lattice(Lattice* other);
+    // void init_params(const std::string config_file);
+     Lattice(const int capacity, const int pos_dim, const int nr_levels, const int nr_feat_per_level);
     // void set_and_check_input(torch::Tensor& positions_raw, torch::Tensor& values); //sets pos dim and val dim and then also checks that the positions and values are correct and we have sigmas for all posiitons dims
     void check_positions(const torch::Tensor& positions_raw);
     void check_positions_elevated(const torch::Tensor& positions_elevated);
@@ -135,14 +136,17 @@ private:
     void check_positions_and_values(const torch::Tensor& positions_raw, const torch::Tensor& values);
     void update_impl();
 
-    std::string m_name;
-    int m_lvl; //lvl of coarsenes of the lattice, it starts at 1 for the finest lattice and increases by 1 for each applicaiton for coarsen()
+    // std::string m_name;
+    // int m_lvl; //lvl of coarsenes of the lattice, it starts at 1 for the finest lattice and increases by 1 for each applicaiton for coarsen()
 
     // std::shared_ptr<HashTable> m_hash_table;
     // std::shared_ptr<LatticeGPU> m_impl;
-    torch::Tensor m_positions; //positions that were used originally for creating the lattice
+    // torch::Tensor m_positions; //positions that were used originally for creating the lattice
     // static int m_expected_position_dimensions;
     int m_capacity;
+    int m_expected_pos_dim;
+    int m_nr_levels;
+    int m_nr_feat_per_level;
 
    
     std::vector<float> m_sigmas;

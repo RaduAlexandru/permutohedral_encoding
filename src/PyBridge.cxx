@@ -52,8 +52,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     // py::class_<Lattice, at::Tensor, std::shared_ptr<Lattice>   > (m, "Lattice")
     // py::class_<Lattice, torch::autograd::Variable, std::shared_ptr<Lattice>   > (m, "Lattice")
     // py::class_<Lattice, torch::autograd::Variable > (m, "Lattice")
-    .def_static("create", &Lattice::create<const std::string> ) //for templated methods like this one we need to explicitly instantiate one of the arguments
-    .def_static("create", &Lattice::create<const std::string, const std::string> ) //for templated methods like this one we need to explicitly instantiate one of the arguments
+    .def_static("create", &Lattice::create<int, int, int, int> ) //for templated methods like this one we need to explicitly instantiate one of the arguments
+    // .def_static("create", &Lattice::create<const std::string, const std::string> ) //for templated methods like this one we need to explicitly instantiate one of the arguments
     // .def("init",  &Lattice::init )
     // .def("elevate_points",  &Lattice::elevate_points )
     // .def("create_E_matrix",  &Lattice::create_E_matrix )
@@ -75,10 +75,10 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     // .def_static("get_expected_filter_extent", &Lattice::get_expected_filter_extent )
     // .def("val_dim", &Lattice::val_dim )
     .def("pos_dim", &Lattice::pos_dim )
-    .def("name", &Lattice::name )
+    // .def("name", &Lattice::name )
     // .def("nr_lattice_vertices", &Lattice::nr_lattice_vertices )
     .def("capacity", &Lattice::capacity )
-    .def("positions", &Lattice::positions )
+    // .def("positions", &Lattice::positions )
     .def_static("is_half_precision", &Lattice::is_half_precision )
     // .def_static("compute_scale_factor_tensor", &Lattice::compute_scale_factor_tensor )
     // .def("sigmas_tensor", &Lattice::sigmas_tensor)

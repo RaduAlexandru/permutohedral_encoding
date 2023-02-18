@@ -192,8 +192,9 @@ setup(
 	license="BSD 3-Clause \"New\" or \"Revised\" License",
 	packages=["permutohedral_encoding"],
 	package_dir={"permutohedral_encoding": "src"},
+	package_data={"permutohedral_encoding": ["pytorch_modules/*"]},
 	install_requires=[],
-	include_package_data=True,
+	# include_package_data=True,
 	zip_safe=False,
 	ext_modules=ext_modules,
 	cmdclass={"build_ext": BuildExtension}

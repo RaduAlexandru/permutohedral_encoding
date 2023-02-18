@@ -51,59 +51,73 @@ T div_round_up(T val, T divisor) {
 
 
 //CPU code that calls the kernels
-Lattice::Lattice(const std::string config_file):
-    // m_impl( new LatticeGPU() ),
-    m_lvl(1)
-    // m_expected_position_dimensions(0)
+// Lattice::Lattice(const std::string config_file):
+//     // m_impl( new LatticeGPU() ),
+//     m_lvl(1)
+//     // m_expected_position_dimensions(0)
+//     {
+
+//     // init_params(config_file);
+//     VLOG(3) << "Creating lattice";
+
+// }
+
+
+Lattice::Lattice(const int capacity, const int pos_dim, const int nr_levels, const int nr_feat_per_level):
+    m_capacity(capacity),
+    m_expected_pos_dim(pos_dim),
+    m_nr_levels(nr_levels),
+    m_nr_feat_per_level(nr_feat_per_level)
     {
 
     // init_params(config_file);
-    VLOG(3) << "Creating lattice";
+    // VLOG(3) << "Creating lattice";
 
 }
 
-Lattice::Lattice(const std::string config_file, const std::string name):
-    // m_impl( new LatticeGPU() ),
-    m_name(name),
-    m_lvl(1)
-    {
 
-    // init_params(config_file);
+// Lattice::Lattice(const std::string config_file, const std::string name):
+//     // m_impl( new LatticeGPU() ),
+//     m_name(name),
+//     m_lvl(1)
+//     {
+
+//     // init_params(config_file);
 
 
-    VLOG(3) << "Creating lattice: " <<name;
+//     VLOG(3) << "Creating lattice: " <<name;
 
-}
+// }
 
-Lattice::Lattice(Lattice* other):
-    // m_impl( new LatticeGPU() ),
-    m_lvl(1)
-    {
-        m_lvl=other->m_lvl;
-        // m_pos_dim=other->m_pos_dim;
-        // m_val_dim=other->m_val_dim;
-        // m_hash_table_capacity=other->m_hash_table_capacity;
-        m_sigmas=other->m_sigmas;
-        m_sigmas_tensor=other->m_sigmas_tensor.clone(); //deep copy
-        // m_expected_position_dimensions=other->m_expected_position_dimensions;
-        // m_splatting_indices_tensor=other->m_splatting_indices_tensor; //shallow copy
-        // m_splatting_weights_tensor=other->m_splatting_weights_tensor; //shallow copy
-        // m_lattice_rowified=other->m_lattice_rowified; //shallow copy
-        m_positions=other->m_positions; //shallow copy
-        //hashtable
-        // m_hash_table=std::make_shared<HashTable>(other->hash_table()->capacity() );
-        // m_hash_table->m_capacity=other->m_hash_table_capacity; 
-        // m_hash_table->m_pos_dim=other->m_pos_dim;
-        //hashtable tensors shallow copy (just a pointer assignemtn so they use the same data in memory)
-        // m_hash_table->m_keys_tensor=other->m_hash_table->m_keys_tensor;
-        // m_hash_table->m_values_tensor=other->m_hash_table->m_values_tensor;
-        // m_hash_table->m_entries_tensor=other->m_hash_table->m_entries_tensor;
-        // m_hash_table->m_nr_filled_tensor=other->m_hash_table->m_nr_filled_tensor.clone(); //deep copy for this one as the new lattice may have different number of vertices
-        // m_hash_table->m_nr_filled=m_hash_table->m_nr_filled;
-        // m_hash_table->m_nr_filled_is_dirty=m_hash_table->m_nr_filled_is_dirty;
-        // m_hash_table->update_impl();
+// Lattice::Lattice(Lattice* other):
+//     // m_impl( new LatticeGPU() ),
+//     m_lvl(1)
+//     {
+//         m_lvl=other->m_lvl;
+//         // m_pos_dim=other->m_pos_dim;
+//         // m_val_dim=other->m_val_dim;
+//         // m_hash_table_capacity=other->m_hash_table_capacity;
+//         m_sigmas=other->m_sigmas;
+//         m_sigmas_tensor=other->m_sigmas_tensor.clone(); //deep copy
+//         // m_expected_position_dimensions=other->m_expected_position_dimensions;
+//         // m_splatting_indices_tensor=other->m_splatting_indices_tensor; //shallow copy
+//         // m_splatting_weights_tensor=other->m_splatting_weights_tensor; //shallow copy
+//         // m_lattice_rowified=other->m_lattice_rowified; //shallow copy
+//         m_positions=other->m_positions; //shallow copy
+//         //hashtable
+//         // m_hash_table=std::make_shared<HashTable>(other->hash_table()->capacity() );
+//         // m_hash_table->m_capacity=other->m_hash_table_capacity; 
+//         // m_hash_table->m_pos_dim=other->m_pos_dim;
+//         //hashtable tensors shallow copy (just a pointer assignemtn so they use the same data in memory)
+//         // m_hash_table->m_keys_tensor=other->m_hash_table->m_keys_tensor;
+//         // m_hash_table->m_values_tensor=other->m_hash_table->m_values_tensor;
+//         // m_hash_table->m_entries_tensor=other->m_hash_table->m_entries_tensor;
+//         // m_hash_table->m_nr_filled_tensor=other->m_hash_table->m_nr_filled_tensor.clone(); //deep copy for this one as the new lattice may have different number of vertices
+//         // m_hash_table->m_nr_filled=m_hash_table->m_nr_filled;
+//         // m_hash_table->m_nr_filled_is_dirty=m_hash_table->m_nr_filled_is_dirty;
+//         // m_hash_table->update_impl();
 
-}
+// }
 
 Lattice::~Lattice(){
     // LOG(WARNING) << "Deleting lattice: " << m_name;
@@ -195,7 +209,8 @@ void Lattice::check_positions(const torch::Tensor& positions_raw){
     CHECK(positions_raw.scalar_type()==at::kFloat) << "positions should be of type float";
     CHECK(positions_raw.dim()==2) << "positions should have dim 2 correspondin to HW. However it has sizes" << positions_raw.sizes();
     int pos_dim=positions_raw.size(1);
-    CHECK(m_sigmas.size()==pos_dim) <<"One must set sigmas for each dimension of the positions. Use set_sigmas. m_sigmas is " << m_sigmas.size() << " m_pos dim is " <<pos_dim;
+    // CHECK(m_sigmas.size()==pos_dim) <<"One must set sigmas for each dimension of the positions. Use set_sigmas. m_sigmas is " << m_sigmas.size() << " m_pos dim is " <<pos_dim;
+    CHECK(m_expected_pos_dim==positions_raw.size(1)) << "The expected pos dim is " << m_expected_pos_dim << " whole the input points have pos_dim " << positions_raw.size(1);
     CHECK(positions_raw.size(0)!=0) << "Why do we have 0 points";
     CHECK(positions_raw.size(1)!=0) << "Why do we have dimension 0 for the points";
     // CHECK(positions_raw.is_contiguous()) << "Positions raw is not contiguous. Please call .contiguous() on it";
@@ -2816,15 +2831,15 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> Lattice::create_non_diff
 // }
 int Lattice::pos_dim(){
     // return m_hash_table->pos_dim();
-    return m_sigmas.size();
+    return m_expected_pos_dim;
 }
 int Lattice::capacity(){
     // return m_hash_table->capacity();
     return m_capacity;
 }
-std::string Lattice::name(){
-    return m_name;
-}
+// std::string Lattice::name(){
+//     return m_name;
+// }
 // int Lattice::nr_lattice_vertices(){
   
 //     // m_impl->wait_to_create_vertices(); //we synchronize the event and wait until whatever kernel was launched to create vertices has also finished
@@ -2890,9 +2905,9 @@ std::string Lattice::name(){
 torch::Tensor Lattice::sigmas_tensor(){
     return m_sigmas_tensor;
 }
-torch::Tensor Lattice::positions(){
-    return m_positions;
-}
+// torch::Tensor Lattice::positions(){
+    // return m_positions;
+// }
 // std::shared_ptr<HashTable> Lattice::hash_table(){
 //     return m_hash_table;
 // }
@@ -2920,9 +2935,9 @@ bool Lattice::is_half_precision(){
 
 //     m_sigmas_tensor=vec2tensor(m_sigmas);
 // }
-void Lattice::set_name(const std::string name){
-    m_name=name;
-}
+// void Lattice::set_name(const std::string name){
+//     m_name=name;
+// }
 // void Lattice::set_values(const torch::Tensor& new_values, const bool sanity_check){
 //     // m_values_tensor=new_values.contiguous();
 //     // update_impl();
