@@ -161,7 +161,7 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 		
 		return lattice_values_grad, None, positions_grad, None, None, None, None, None, None, None, None, None
 	@staticmethod
-	def backward(ctx, double_lattice_values_grad, dumm2, dummy3, double_positions_grad, dummy5, dummy6, dummy7, dummy8, dumm9, dummy10, dummy11, dummy12, dummy13):
+	def backward(ctx, double_lattice_values_grad, dumm2, double_positions_grad, dummy5, dummy6, dummy7, dummy8, dumm9, dummy10, dummy11, dummy12, dummy13):
 
 		# print("double back------")
 
@@ -176,7 +176,7 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 
 		# print("concat_points",concat_points)
 
-		grad_lattice_values_monolithic, grad_grad_sliced_values_monolithic=_C.Encoding.slice_double_back_from_positions_grad(double_positions_grad, positions, values, grad_sliced_values_monolithic, scale_factor, random_shift_monolithic, anneal_window, concat_points )
+		grad_lattice_values_monolithic, grad_grad_sliced_values_monolithic=_C.Encoding.slice_double_back_from_positions_grad(double_positions_grad, positions, lattice_values, grad_sliced_values_monolithic, scale_factor, random_shift_monolithic, anneal_window, concat_points )
 
 		# grad_lattice_values_monolithic=grad_lattice_values_monolithic*0
 		# grad_grad_sliced_values_monolithic=grad_grad_sliced_values_monolithic*0
@@ -199,4 +199,4 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 		#     print("wtf ")
 		#     exit() 
 		
-		return grad_grad_sliced_values_monolithic, grad_lattice_values_monolithic, None, None, None, None, None, None, None, None, None, None, None
+		return grad_grad_sliced_values_monolithic, grad_lattice_values_monolithic, None, None, None, None, None, None, None, None, None, None

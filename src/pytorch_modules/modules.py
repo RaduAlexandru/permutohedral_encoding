@@ -103,15 +103,18 @@ class PermutoEncoding(torch.nn.Module):
 		self.scale_factor=_C.Encoding.compute_scale_factor_tensor(scale_per_level,pos_dim).cuda() 
 
 		#create hashmap values
-		self.lattice_values=torch.randn( capacity, nr_levels, nr_feat_per_level )*1e-5
-		self.lattice_values=self.lattice_values.permute(1,0,2).contiguous() #makes it nr_levels x capacity x nr_feat
-		self.lattice_values=torch.nn.Parameter(self.lattice_values).cuda() 
+		lattice_values=torch.randn( capacity, nr_levels, nr_feat_per_level )*1e-5
+		lattice_values=lattice_values.permute(1,0,2).contiguous() #makes it nr_levels x capacity x nr_feat
+		self.lattice_values=torch.nn.Parameter(lattice_values.cuda())
+		# self.register_parameter(name="lattice_values", param=self.lattice_values)
 
 		#each levels of the hashamp can be randomly shifted so that we minimize collisions
-		self.random_shift_per_level=torch.empty((1))
 		if appply_random_shift_per_level:
-			self.random_shift_per_level=torch.randn( nr_levels, 3)*10
-			self.random_shift_per_level=torch.nn.Parameter( self.random_shift_per_level ).cuda() #we make it a parameter just so it gets saved when we checkpoint
+			random_shift_per_level=torch.randn( nr_levels, 3)*10
+			self.random_shift_per_level=torch.nn.Parameter( random_shift_per_level.cuda() ) #we make it a parameter just so it gets saved when we checkpoint
+		else:
+			self.random_shift_per_level= torch.nn.Parameter( torch.empty((1)).cuda() )
+		# self.register_parameter(name="random_shift_per_level", param=self.random_shift_per_level)
 
 
 		#make a anneal window of all ones 
