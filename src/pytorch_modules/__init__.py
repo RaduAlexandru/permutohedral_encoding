@@ -1,6 +1,6 @@
-# print("-----------------init--------------------pytorch modules")
 
 # import
-from permutohedral_encoding.pytorch_modules.modules import Encoding
+from permutohedral_encoding.pytorch_modules.modules import PermutoEncoding
+# from permutohedral_encoding import Encoding
 
-# __all__ = ["Encoding"]
+__all__ = ["PermutoEncoding"]

@@ -146,7 +146,8 @@ def make_extension(compute_capability):
 
 	ext = CUDAExtension(
 		# name=f"permutohedral_encoding._{compute_capability}_C",
-		name=f"permutohedral_encoding",
+		name=f"permutohedral_encoding_bindings._{compute_capability}_C",
+		# name=f"permutohedral_encoding",
 		sources=source_files,
 		include_dirs=[
 			"%s/include" % root_dir,

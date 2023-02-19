@@ -2,9 +2,9 @@
 
 # print("modules in path", __file__)
 
-# import gc
-# import importlib
-# import warnings
+import gc
+import importlib
+import warnings
 
 import torch
 
@@ -43,7 +43,7 @@ import torch
 # 		continue
 
 # 	try:
-# 		_C = importlib.import_module(f"tinycudann_bindings._{cc}_C")
+# 		_C = importlib.import_module(f"permutohedral_encoding_bindings._{cc}_C")
 # 		if cc != system_compute_capability:
 # 			warnings.warn(f"tinycudann was built for lower compute capability ({cc}) than the system's ({system_compute_capability}). Performance may be suboptimal.")
 # 		break
@@ -81,9 +81,15 @@ import torch
 #         print("making")
 
 
+
+from permutohedral_encoding.pytorch_modules.find_cpp_package import *
+from permutohedral_encoding.pytorch_modules.funcs import *
+
+_C=find_package()
+
 class PermutoEncoding(torch.nn.Module):
-    def __init__(self, pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, appply_random_shift_per_level, concat_points, concat_points_scaling):
-        super(PermutoEncoding, self).__init__()
+	def __init__(self, pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, appply_random_shift_per_level, concat_points, concat_points_scaling):
+		super(PermutoEncoding, self).__init__()
 		self.pos_dim=pos_dim 
 		self.capacity=capacity 
 		self.nr_levels=nr_levels 
@@ -92,6 +98,9 @@ class PermutoEncoding(torch.nn.Module):
 		self.appply_random_shift_per_level=appply_random_shift_per_level
 		self.concat_points=concat_points 
 		self.concat_points_scaling=concat_points_scaling
+
+		#create the scale factor
+		self.scale_factor=_C.Encoding.compute_scale_factor_tensor(scale_per_level,pos_dim).cuda() 
 
 		#create hashmap values
 		self.values=torch.randn( capacity, nr_levels, nr_feat_per_level )*1e-5
@@ -102,23 +111,34 @@ class PermutoEncoding(torch.nn.Module):
 		self.random_shift_per_level=torch.empty((1))
 		if appply_random_shift_per_level:
 			self.random_shift_per_level=torch.randn( nr_levels, 3)*10
-			self.random_shift_per_level=torch.nn.Parameter( random_shift_per_level ) #we make it a parameter just so it gets saved when we checkpoint
+			self.random_shift_per_level=torch.nn.Parameter( self.random_shift_per_level ).cuda() #we make it a parameter just so it gets saved when we checkpoint
+
+
+		#make a anneal window of all ones 
+		self.anneal_window=torch.ones((nr_levels)).cuda()
 		
 		
-    def forward(self, positions, anneal_window):
+	def forward(self, positions, anneal_window=None):
 
-        nr_positions=positions.shape[0]
-        
+		nr_positions=positions.shape[0]
 
-        require_values_grad= self.values.requires_grad and torch.is_grad_enabled()
-        require_positions_grad=  positions.requires_grad and torch.is_grad_enabled()
+		#TODO 
+		# check for posdim
+		assert positions.shape[1] == self.pos_dim,"Pos dim for the lattice doesn't correspond with the position of the points."
 
-        sliced_values, splatting_indices, splatting_weights= PermutoEncodingFunc.apply(self.values, self.scale_per_level, positions, self.random_shift_per_level, anneal_window, self.concat_points, self.concat_points_scaling, require_values_grad, require_positions_grad)
+		if anneal_window is None:
+			anneal_window=self.anneal_window
+		
 
-        sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
+		require_values_grad= self.values.requires_grad and torch.is_grad_enabled()
+		require_positions_grad=  positions.requires_grad and torch.is_grad_enabled()
 
-        return sliced_values, splatting_indices, splatting_weights 
+		sliced_values, splatting_indices, splatting_weights= PermutoEncodingFunc.apply(self.values, self.scale_factor, positions, self.random_shift_per_level, anneal_window, self.concat_points, self.concat_points_scaling, require_values_grad, require_positions_grad)
 
+		sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
+
+		# return sliced_values, splatting_indices, splatting_weights 
+		return sliced_values
 
 
 # class SliceLatticeWithCollisionsFastMRMonolithicModule(torch.nn.Module):
