@@ -51,6 +51,7 @@ void Encoding::test(const torch::Tensor& tensor){
 
 
 void Encoding::check_positions(const torch::Tensor& positions_raw){
+    CHECK(positions_raw.is_cuda()) << "positions should be in GPU memory. Please call .cuda() on the tensor";
     CHECK(positions_raw.scalar_type()==at::kFloat) << "positions should be of type float";
     CHECK(positions_raw.dim()==2) << "positions should have dim 2 correspondin to HW. However it has sizes" << positions_raw.sizes();
     int pos_dim=positions_raw.size(1);
@@ -62,6 +63,7 @@ void Encoding::check_positions(const torch::Tensor& positions_raw){
     // CHECK(pos_dim==m_expected_position_dimensions) << "The pos dim should be the same as the expected positions dimensions given by the sigmas. Pos dim is " << pos_dim << " m_expected_position_dimensions " << m_expected_position_dimensions;
 }
 void Encoding::check_values(const torch::Tensor& values){
+    CHECK(values.is_cuda()) << "lattice values should be in GPU memory. Please call .cuda() on the tensor";
     CHECK(values.scalar_type()==at::kFloat) << "values should be of type float";
     CHECK(values.dim()==2) << "values should have dim 2 correspondin to HW. However it has sizes" << values.sizes();
     CHECK(values.is_contiguous()) << "Values is not contiguous. Please call .contiguous() on it";
@@ -193,7 +195,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> Encoding::slice_with_col
     // TIME_START("slice_forwarD_cuda");
     // VLOG(1) << "starting cuda";
     // std::cout << "-------starting cuda " << std::endl;
-    VLOG(1) << "---starting cuda";
+    // VLOG(1) << "---starting cuda";
     if (pos_dim==2){
         if(val_dim==2){
             slice_with_collisions_no_precomputation_fast_mr_monolithic<2, 2><<<blocks, BLOCK_SIZE>>>(
@@ -759,6 +761,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding::slice_backwards_standalone_no
     }
 
     int capacity=lattice_values_monolithic.size(1);
+    // std::cout << "capacity is " << capacity << std::endl;
 
     
 

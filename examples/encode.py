@@ -16,10 +16,16 @@ encoding=permuto_enc.PermutoEncoding(pos_dim, capacity, nr_levels, nr_feat_per_l
 
 #create points
 nr_points=1000
-points=torch.rand(nr_points, pos_dim)
+points=torch.rand(nr_points, pos_dim).cuda()
 
 #encode
 features=encoding(points)
 
 print("features is ", features.shape)
+
+
+#loss
+loss=features.sum()
+
+loss.backward()
 

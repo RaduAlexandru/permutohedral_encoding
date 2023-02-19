@@ -15,7 +15,7 @@ _C=find_package()
 
 class PermutoEncodingFunc(torch.autograd.Function):
 	@staticmethod
-	def forward(ctx, values, scale_factor, positions, random_shift_per_level, anneal_window, concat_points, points_scaling, require_values_grad, require_positions_grad):
+	def forward(ctx, lattice_values, scale_factor, positions, random_shift_per_level, anneal_window, concat_points, points_scaling, require_lattice_values_grad, require_positions_grad):
 
 		# print( "values 0:", type(values))
 		# print( "scale_factor 1:", type(scale_factor))
@@ -33,13 +33,13 @@ class PermutoEncodingFunc(torch.autograd.Function):
 
 
 	   
-		sliced_values, splatting_indices, splatting_weights=_C.Encoding.slice_with_collisions_standalone_no_precomputation_fast_mr_monolithic(values, scale_factor, positions, random_shift_per_level, anneal_window, concat_points, points_scaling, False, False )
+		sliced_values, splatting_indices, splatting_weights=_C.Encoding.slice_with_collisions_standalone_no_precomputation_fast_mr_monolithic(lattice_values, scale_factor, positions, random_shift_per_level, anneal_window, concat_points, points_scaling, False, False )
 
-		ctx.require_values_grad=require_values_grad
+		ctx.require_lattice_values_grad=require_lattice_values_grad
 		ctx.require_positions_grad=require_positions_grad
 		ctx.concat_points=concat_points
 		# ctx.lattice_structure = lattice_structure
-		ctx.save_for_backward(values, positions, sliced_values, splatting_indices, splatting_weights, random_shift_per_level, anneal_window, scale_factor)
+		ctx.save_for_backward(lattice_values, positions, sliced_values, splatting_indices, splatting_weights, random_shift_per_level, anneal_window, scale_factor)
 
 
 		return sliced_values, splatting_indices, splatting_weights
@@ -54,11 +54,11 @@ class PermutoEncodingFunc(torch.autograd.Function):
 		# return None, None, None, None, None, None, None, None, None, None, None, None, None
 
 
-		require_values_grad=ctx.require_values_grad
+		require_lattice_values_grad=ctx.require_lattice_values_grad
 		require_positions_grad=ctx.require_positions_grad
-		assert require_values_grad or require_positions_grad, "We cannot perform the backward function on the slicing because we did not precompute the required tensors in the forward pass. To enable this, set the model.train(), set torch.set_grad_enabled(True) and make lattice_values have required_grad=True"
+		assert require_lattice_values_grad or require_positions_grad, "We cannot perform the backward function on the slicing because we did not precompute the required tensors in the forward pass. To enable this, set the model.train(), set torch.set_grad_enabled(True) and make lattice_values have required_grad=True"
 	  
-		values, positions, sliced_values, splatting_indices, splatting_weights, random_shift_monolithic, anneal_window, scale_factor =ctx.saved_tensors
+		lattice_values, positions, sliced_values, splatting_indices, splatting_weights, random_shift_monolithic, anneal_window, scale_factor =ctx.saved_tensors
 
 
 		# lattice_structure = ctx.lattice_structure
@@ -68,7 +68,7 @@ class PermutoEncodingFunc(torch.autograd.Function):
 		# lattice_structure.set_sigma(sigma)
 
 
-		return SliceLatticeWithCollisionFastMRMonolithicBackward.apply(grad_sliced_values_monolithic, values, positions, sliced_values, splatting_indices, splatting_weights, random_shift_monolithic, anneal_window,  scale_factor, concat_points,  require_values_grad, require_positions_grad) 
+		return SliceLatticeWithCollisionFastMRMonolithicBackward.apply(grad_sliced_values_monolithic, lattice_values, positions, sliced_values, splatting_indices, splatting_weights, random_shift_monolithic, anneal_window,  scale_factor, concat_points,  require_lattice_values_grad, require_positions_grad) 
 
 
 	   
@@ -77,9 +77,9 @@ class PermutoEncodingFunc(torch.autograd.Function):
 #in order to enable a double backward like in https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html
 class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function):
 	@staticmethod
-	def forward(ctx, grad_sliced_values_monolithic, values, positions, sliced_values_hom, splatting_indices, splatting_weights, random_shift_monolithic, anneal_window, scale_factor, concat_points,  require_values_grad, require_positions_grad):
+	def forward(ctx, grad_sliced_values_monolithic, lattice_values, positions, sliced_values_hom, splatting_indices, splatting_weights, random_shift_monolithic, anneal_window, scale_factor, concat_points,  require_lattice_values_grad, require_positions_grad):
 		# lattice_values=None
-		if require_values_grad or require_positions_grad:
+		if require_lattice_values_grad or require_positions_grad:
 			grad_sliced_values_monolithic=grad_sliced_values_monolithic.contiguous()
 
 			# print("grad_sliced_values_monolithic", grad_sliced_values_monolithic.type())
@@ -109,13 +109,15 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 
 
 
-			ctx.save_for_backward(values, grad_sliced_values_monolithic, positions, random_shift_monolithic, anneal_window, scale_factor )
+			ctx.save_for_backward(lattice_values, grad_sliced_values_monolithic, positions, random_shift_monolithic, anneal_window, scale_factor )
 			ctx.concat_points=concat_points
 			# ctx.lattice_structure = lattice_structure
 
 			# print("require_positions_grad",require_positions_grad)
 
-			values_grad, positions_grad=_C.Encoding.slice_backwards_standalone_no_precomputation_no_homogeneous_mr_monolithic(positions, values, grad_sliced_values_monolithic, scale_factor, random_shift_monolithic, anneal_window, concat_points, require_values_grad, require_positions_grad) 
+			# print("running backward")
+			lattice_values_grad, positions_grad=_C.Encoding.slice_backwards_standalone_no_precomputation_no_homogeneous_mr_monolithic(positions, lattice_values, grad_sliced_values_monolithic, scale_factor, random_shift_monolithic, anneal_window, concat_points, require_lattice_values_grad, require_positions_grad) 
+			# print("finished backward")
 			# if Lattice.is_half_precision():
 			# 	pass
 			# else:
@@ -153,17 +155,22 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 		# if torch.isnan(positions_grad).any():
 		#     print("wtf ")
 		#     exit()
+
+		# print("positions_grad ", positions_grad.shape)
+		# print("lattice_values_grad ", lattice_values_grad.shape)
 		
-		return values_grad, None, None, positions_grad, None, None, None, None, None, None, None, None, None
+		return lattice_values_grad, None, positions_grad, None, None, None, None, None, None, None, None, None
 	@staticmethod
 	def backward(ctx, double_lattice_values_grad, dumm2, dummy3, double_positions_grad, dummy5, dummy6, dummy7, dummy8, dumm9, dummy10, dummy11, dummy12, dummy13):
+
+		# print("double back------")
 
 		#in the forward pass of this module we do 
 		#lattice_values_grad, positions_grad = slice_back(lattice_values_monolithic, grad_sliced_values_monolithic, positions)
 		#now in the backward pass we have the upstream gradient which is double_lattice_values_grad, double_positions_grad
 		#we want to propagate the double_positions_grad into lattice_values_monolithic and grad_sliced_values_monolithic
 
-		values, grad_sliced_values_monolithic, positions, random_shift_monolithic, anneal_window, scale_factor =ctx.saved_tensors
+		lattice_values, grad_sliced_values_monolithic, positions, random_shift_monolithic, anneal_window, scale_factor =ctx.saved_tensors
 		concat_points=ctx.concat_points
 		# lattice_structure = ctx.lattice_structure
 

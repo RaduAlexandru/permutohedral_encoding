@@ -103,9 +103,9 @@ class PermutoEncoding(torch.nn.Module):
 		self.scale_factor=_C.Encoding.compute_scale_factor_tensor(scale_per_level,pos_dim).cuda() 
 
 		#create hashmap values
-		self.values=torch.randn( capacity, nr_levels, nr_feat_per_level )*1e-5
-		self.values=self.values.permute(1,0,2).contiguous() #makes it nr_levels x capacity x nr_feat
-		self.values=torch.nn.Parameter(self.values) 
+		self.lattice_values=torch.randn( capacity, nr_levels, nr_feat_per_level )*1e-5
+		self.lattice_values=self.lattice_values.permute(1,0,2).contiguous() #makes it nr_levels x capacity x nr_feat
+		self.lattice_values=torch.nn.Parameter(self.lattice_values).cuda() 
 
 		#each levels of the hashamp can be randomly shifted so that we minimize collisions
 		self.random_shift_per_level=torch.empty((1))
@@ -130,10 +130,10 @@ class PermutoEncoding(torch.nn.Module):
 			anneal_window=self.anneal_window
 		
 
-		require_values_grad= self.values.requires_grad and torch.is_grad_enabled()
+		require_lattice_values_grad= self.lattice_values.requires_grad and torch.is_grad_enabled()
 		require_positions_grad=  positions.requires_grad and torch.is_grad_enabled()
 
-		sliced_values, splatting_indices, splatting_weights= PermutoEncodingFunc.apply(self.values, self.scale_factor, positions, self.random_shift_per_level, anneal_window, self.concat_points, self.concat_points_scaling, require_values_grad, require_positions_grad)
+		sliced_values, splatting_indices, splatting_weights= PermutoEncodingFunc.apply(self.lattice_values, self.scale_factor, positions, self.random_shift_per_level, anneal_window, self.concat_points, self.concat_points_scaling, require_lattice_values_grad, require_positions_grad)
 
 		sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
 
