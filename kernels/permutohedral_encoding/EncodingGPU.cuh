@@ -1,20 +1,8 @@
 #pragma once
 
-// #include "instant_ngp_2/kernels/HashTableGPU.cuh"
 
-// #include "instant_ngp_2/jitify_helper/jitify_helper.cuh"
 #include <torch/torch.h>
-// #include <cuda.h>
-// #include <cuda_runtime.h>
-// #include <cuda_runtime_api.h>
-// #include "device_launch_parameters.h" //needed for threadIdx and blockDim 
-// #include <torch/torch.h>
-// #include <cuda_bf16.h>
-// #include <cuda_fp16.h>
 
-//Add this header after we add all cuda stuff because we need the profiler to have cudaDeviceSyncronize defined
-// #define ENABLE_CUDA_PROFILING 1
-// #include "Profiler.h" 
 
 
 #define BLOCK_SIZE 128
@@ -22,185 +10,6 @@
 
 #define LATTICE_HALF_PRECISION 0
 
-// class LatticeGPU { 
-// public:
-
-//     //during nvrtc compilation we do not want to compile this code as it does not work due to not including vector definition
-//     LatticeGPU(){
-//         // create_program_handles();
-//         // cudaEventCreate (&m_event_nr_vertices_lattice_changed);
-//     }
-
-//     // //it uses Jittify to get a handle for the programs. The programs can contain more than one kernel.. It doesnt actually compile them, they will get jit compiled the first time you run them
-//     // void create_program_handles(){
-//     //     m_lattice_program=create_jitify_program( std::string(CMAKE_SOURCE_DIR)+"/include/instant_ngp_2/kernels/LatticeGPU.cuh" );
-//     // }
-
-
-//     // void slice_with_collisions_standalone_no_precomputation(const float* positions, float* sliced_values, const int pos_dim, const int val_dim, const int nr_positions, int* splatting_indices, float* splatting_weights,  const HashTableGPU& hash_table_gpu){
-
-//     //     dim3 blocks((nr_positions - 1) / BLOCK_SIZE + 1, 1, 1);
-//     //     dim3 blockSize(BLOCK_SIZE, 1, 1);
-//     //     blockSize.y = 1;
-
-//     //     // CUresult res = slice_with_collisions_no_precomputation<3><<<blocks, blockSize>>>(3, positions, sliced_values, nr_positions, splatting_indices, splatting_weights, hash_table_gpu);
-
-//     //     // CUresult res= m_lattice_program.kernel("slice_with_collisions_no_precomputation")
-//     //     //             .instantiate(pos_dim, val_dim)
-//     //     //             .configure(blocks, blockSize)
-//     //     //             .launch( positions, sliced_values, nr_positions, splatting_indices, splatting_weights, hash_table_gpu);
-//     //     // CUDA_CHECK_CURESULT(res);
-//     //     CUDA_CHECK_ERROR();
-
-//     // }
-
-    
-
-//     // void slice_backwards_standalone_with_precomputation_no_homogeneous(float* grad_sliced_values, int* splatting_indices, float* splatting_weights,  const int pos_dim, const int val_dim, const int nr_positions, const HashTableGPU& hash_table_gpu){
-
-
-//     //     dim3 blocks((nr_positions - 1) / BLOCK_SIZE + 1, 1, 1);
-//     //     dim3 blockSize(BLOCK_SIZE, 1, 1);
-//     //     CUresult res= m_lattice_program.kernel("slice_backwards_with_precomputation_no_homogeneous")
-//     //                 .instantiate(pos_dim, val_dim)
-//     //                 .configure(blocks, blockSize)
-//     //                 .launch( nr_positions, grad_sliced_values, splatting_indices, splatting_weights, hash_table_gpu );
-//     //     CUDA_CHECK_CURESULT(res);
-//     //     CUDA_CHECK_ERROR()
-
-//     // }
-
-    
-
-//     // void elevate(float* positions, const int pos_dim, const int nr_positions, float* elevated){
-
-//     //     dim3 blocks((nr_positions - 1) / BLOCK_SIZE + 1, 1, 1);
-//     //     dim3 blockSize(BLOCK_SIZE, 1, 1);
-//     //     CUresult res= m_lattice_program.kernel("elevate_points")
-//     //                 .instantiate(pos_dim)
-//     //                 .configure(blocks, blockSize)
-//     //                 .launch( nr_positions, positions, elevated );
-//     //     CUDA_CHECK_CURESULT(res);
-//     //     CUDA_CHECK_ERROR()
-
-//     // }
-
-//     // void wait_to_create_vertices(){
-//     //     cudaEventSynchronize(m_event_nr_vertices_lattice_changed);
-//     // }
-    
-
-//     // jitify::Program m_lattice_program;
-
-//     //for syncronization
-//     // cudaEvent_t m_event_nr_vertices_lattice_changed; //when doing splatting, distribute, or a create_coarse_verts, we must record this even after the kernel. Afterwards when we call nr_lattice_vertices we wait for this event to have finished indicating that the kernel has finished
-
-
-
-   
-
-// };
-
-
-
-// //elevated a vector from m_pos_dim to a m_pos_dim+1 space
-// template<int pos_dim>
-// __device__ void elevate(float* elevated, const float* position){
-//     //TODO the scale factor can be precomputed
-//     float scaleFactor[pos_dim];
-//     // float invStdDev = (pos_dim + 1) * sqrt(2.0f / 3);
-//     float invStdDev = 1.0;
-//     for (int i = 0; i < pos_dim; i++) {
-//         scaleFactor[i] = 1.0f / (sqrt((float) (i + 1) * (i + 2))) * invStdDev;
-//     }
-
-//     // embed position vector into the hyperplane
-//     // first rotate position into the (pd+1)-dimensional hyperplane
-//     // sm contains the sum of 1..n of our feature vector
-//     float sm = 0;
-//     for (int i = pos_dim; i > 0; i--) {
-//         float cf = position[i - 1] * scaleFactor[i - 1];
-//         // float cf = position[i - 1] ;
-//         elevated[i] = sm - i * cf;
-//         sm += cf;
-//     }
-//     elevated[0] = sm;
-
-// }
-
-// //check if a vector has all coordinates integers like 1.0 or do they have a fractional part. Useful when having lattice keys from different scales
-// __device__ bool are_all_coords_integer(const float* vec, const int vec_size){
-//     for (int i = 0; i < vec_size; i++) {
-//         float val=vec[i];
-//         float integer_part=0.0;
-//         float decimal_part=0.0;
-//         decimal_part=modff(val, &integer_part);
-//         decimal_part=fabs(decimal_part);
-//         if( decimal_part>0.0001 ){ 
-//             return false;
-//         }
-//     }
-//     return true;
-
-// }
-
-
-// //I believe that when we embedd a fine lattice in a coarse one we can end up with keys of type 0.5, 0.5, -1.0 so making movements of 0.5 with them will end up in non integer keys. This helps me debug this 
-// __device__ bool is_only_one_coord_integer(const float* vec, const int vec_size){
-//     int nr_integer_coords=0;
-//     for (int i = 0; i < vec_size; i++) {
-//         float val=vec[i];
-//         float integer_part=0.0;
-//         float decimal_part=0.0;
-//         decimal_part=modff(val, &integer_part);
-//         decimal_part=fabs(decimal_part);
-//         if( decimal_part<0.0001 ){  //if the decimal part is very small we say it's integer
-//             return nr_integer_coords++;
-//         }
-//     }
-
-//     if (nr_integer_coords==1){
-//         return true;
-//     }else{
-//         return false;
-//     }
-
-// }
-// __device__ int nr_coords_integer(const float* vec, const int vec_size){
-//     int nr_integer_coords=0;
-//     for (int i = 0; i < vec_size; i++) {
-//         float val=vec[i];
-//         float integer_part=0.0;
-//         float decimal_part=0.0;
-//         decimal_part=modff(val, &integer_part);
-//         decimal_part=fabs(decimal_part);
-//         if( decimal_part<0.0001 ){  //if the decimal part is very small we say it's integer
-//             return nr_integer_coords++;
-//         }
-//     }
-
-//     return nr_integer_coords;
-
-// }
-
-
-// template<int pos_dim>
-// __global__ void 
-// __launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
-// elevate_points(const int nr_positions,  const float* positions, float* elevated){
-
-//     // determine where in the thread grid we are
-//     int idx = blockIdx.x * blockDim.x + threadIdx.x; //each thread will deal with a new value
-
-//     if(idx>=nr_positions){ //don't go out of bounds
-//         return;
-//     }
-    
-//     float* elevated_point = elevated + idx * (pos_dim + 1);
-//     const float *position = positions + idx * pos_dim;
-//     elevate<pos_dim>(elevated_point, position);
-
-// }
 
 //fast atomic add for half tensor like https://github.com/pytorch/pytorch/blob/b47ae9810c1a645f4942737ab4a58b2b1407e7bd/aten/src/ATen/native/cuda/KernelUtils.cuh
 template <
@@ -259,195 +68,11 @@ __device__ __forceinline__ constexpr unsigned long upper_power_of_two(unsigned l
 
     // return pow(2, ceil(log(val)/log(2)));
 }
+struct __device_builtin__ __builtin_align__(8) __half4
+{
+    __half x, y, z, w;
+};
 
-
-
-
-// template<int pos_dim, int val_dim>
-// __global__ void 
-// // __launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
-// slice_with_collisions_no_precomputation(
-//     const int nr_positions,
-//     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
-//     torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> sliced_values,
-//     torch::PackedTensorAccessor32<int,1,torch::RestrictPtrTraits> splatting_indices,
-//     torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> splatting_weights,
-//     const bool should_precompute_tensors_for_backward,
-//     HashTableGPU hash_table,
-//     torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> values
-//     ) {
-
-//     int idx = blockIdx.x * blockDim.x + threadIdx.x; //each thread will deal with a new value
-
-
-//     if(idx>=nr_positions){ //don't go out of bounds
-//         return;
-//     }
-
-
-    
-//     float elevated[pos_dim + 1];
-
-//     //calculate elevated
-//     float scaleFactor[pos_dim];
-//     // float invStdDev = (pos_dim + 1) * sqrt(2.0f / 3);
-//     float invStdDev = 1.0;
-//     for (int i = 0; i < pos_dim; i++) {
-//         scaleFactor[i] = 1.0f / (sqrt((float) (i + 1) * (i + 2))) * invStdDev;
-//     }
-//     // embed position vector into the hyperplane
-//     // first rotate position into the (pd+1)-dimensional hyperplane
-//     // sm contains the sum of 1..n of our feature vector
-//     float sm = 0;
-//     for (int i = pos_dim; i > 0; i--) {
-//         // float cf = position[i*nr_positions - 1*nr_positions] * scaleFactor[i - 1];
-//         float cf = positions[idx][i-1] * scaleFactor[i - 1];
-//         // float cf = position[i - 1] ;
-//         elevated[i] = sm - i * cf;
-//         sm += cf;
-//     }
-//     elevated[0] = sm;
-
-
-//     int rem0[pos_dim + 1];
-//     int rank[pos_dim + 1]{0};
-
-
-   
-
-
-//     // Find the closest 0-colored simplex through rounding
-//     // greedily search for the closest zero-colored lattice point
-//     int sum = 0;
-//     for (int i = 0; i <= pos_dim; i++) {
-//         float v = elevated[i] * (1.0 / (pos_dim + 1));
-//         float up = ceil(v) * (pos_dim + 1);
-//         float down = floor(v) * (pos_dim + 1);
-//         if (up - elevated[i] < elevated[i] - down) {
-//             rem0[i] = (int) up;
-//         } else {
-//             rem0[i] = (int) down;
-//         }
-//         sum += rem0[i];
-//     }
-//     sum /= pos_dim + 1;
-
-
-//     // Find the simplex we are in and store it in rank (where rank describes what position coordinate i has in the sorted order of the features values)
-//     for (int i = 0; i < pos_dim; i++) {
-//         double di = elevated[i] - rem0[i];
-//         for (int j = i + 1; j <= pos_dim; j++)
-//             if (di < elevated[j] - rem0[j])
-//                 rank[i]++;
-//             else
-//                 rank[j]++;
-//     }
-
-//     // If the point doesn't lie on the plane (sum != 0) bring it back
-//     for (int i = 0; i <= pos_dim; i++) {
-//         rank[i] += sum;
-//         if (rank[i] < 0) {
-//             rank[i] += pos_dim + 1;
-//             rem0[i] += pos_dim + 1;
-//         } else if (rank[i] > pos_dim) {
-//             rank[i] -= pos_dim + 1;
-//             rem0[i] -= pos_dim + 1;
-//         }
-//     }
-
-
-
-//     float barycentric[pos_dim + 2]{0};
-//     // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
-//     for (int i = 0; i <= pos_dim; i++) {
-//         float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
-//         barycentric[pos_dim - rank[i]] += delta;
-//         barycentric[pos_dim + 1 - rank[i]] -= delta;
-//     }
-//     // Wrap around
-//     barycentric[0] += 1.0 + barycentric[pos_dim + 1];
-
-//     //smoothstep of the linear interpolation like done in the instant ngp paper
-//     // for (int i = 0; i <= pos_dim; i++) {
-//         // barycentric[i] = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-//         // float smooth_weight = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-//         // printf("prev weight is %f, new weight is %f \n", barycentric[i], smooth_weight);
-//         //invere smoothstep https://stackoverflow.com/questions/28740544/inverted-smoothstep
-//         // if(barycentric[i]>0 && barycentric[i]<1){
-//             // barycentric[i] = 0.5 - sin(asin(1.0-2.0*barycentric[i])/3.0);
-//         // }
-//     // }
-
-//     //from higher order barycentric coordinates https://domino.mpi-inf.mpg.de/intranet/ag4/ag4publ.nsf/3b7127147beb1437c125675300686244/637fcbb7f3f5a70fc12573cc00458c99/$FILE/paper.pdf
-//     //same as instant ngp
-//     // for (int i = 0; i <= pos_dim; i++) {
-//         // barycentric[i] = -2* barycentric[i]*barycentric[i] *( barycentric[i] -3.0/2 );
-//         // barycentric[i] = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-//     // }
-//     // //renormalize
-//     // float sum_bar=0.0;
-//     // for (int i = 0; i <= pos_dim; i++) {
-//         // sum_bar+=barycentric[i];
-//     // }
-//     // printf("sum %f \n", sum_bar);
-//     // for (int i = 0; i <= pos_dim; i++) {
-//         // barycentric[i]/=sum_bar;
-//     // }
-
-
-
-//     //here we accumulate the values and the homogeneous term
-//     float val_hom[val_dim]{0};
-
-//     int key[pos_dim];
-//     #pragma unroll
-//     for (int remainder = 0; remainder <= pos_dim; remainder++) {
-//         // Compute the location of the lattice point explicitly (all but
-//         // the last coordinate - it's redundant because they sum to zero)
-//         #pragma unroll
-//         for (int i = 0; i < pos_dim; i++) {
-//             key[i] = static_cast<int>(rem0[i] + remainder);
-//             if (rank[i] > pos_dim - remainder)
-//                 key[i] -= (pos_dim + 1);
-//         }
-
-//         // Retrieve pointer to the value at this vertex.
-//         int idx_val=hash_table.retrieve_with_collisions(key);
-//         // float *val = const_cast<float *>(hash_table.m_values + idx_val * val_dim );
-//         // float *val = const_cast<float *>(hash_table.m_values + idx_val);
-
-//         //store also the splatting indices and weight so that they can be used for the backwards pass
-//         if (should_precompute_tensors_for_backward){
-//             splatting_indices[idx * (pos_dim + 1) + remainder]=idx_val; //it indexes in m_keys
-//             splatting_weights[idx * (pos_dim + 1) + remainder]=barycentric[remainder];
-//         }
-        
-
-//         //if the vertex exists accumulate its value weighted by the barycentric weight (accumulates also the homogeneous coordinate)
-//         // if(idx_val!=-1){
-//             #pragma unroll
-//             for (int i = 0; i < val_dim ; i++){
-//                 // printf("accesing val at position i*nr_positions %d idx val is %d for a total of %d \n", i*nr_positions, idx_val, idx_val+i*nr_positions);
-//                 // val_hom[i]+= val[i*nr_positions]* barycentric[remainder];
-//                 // values[idx + i*nr_positions]+= val[i*nr_positions]* barycentric[remainder];
-//                 // sliced_values[idx][i] += values[idx_val][i] * barycentric[remainder];
-//                 val_hom[i] += values[idx_val][i] * barycentric[remainder];
-//             }
-    
-//     }
-
-   
-
-//     // //do not divicde by the homogeneous coordinate, rather just store the value as it is because we will afterwards need the homogeneous coordinate for the backwards passs
-//     for (int i = 0; i < val_dim; i++){
-//     //         // values[idx*val_dim + i]= val_hom[i] ;
-//     //         // values[idx + i*nr_positions]= val_hom[i] ;
-//         sliced_values[idx][i]=val_hom[i];
-//     }
-
-
-
-// }
 
 
 
@@ -487,7 +112,6 @@ template<int pos_dim>
 __forceinline__ __device__ int idx_hash_with_collision(const int * const key, const int& capacity) {
 
     int h = modHash(hash<pos_dim>(key), capacity);
-    // int *e = m_entries + h;
     return h;
 
 
@@ -514,608 +138,6 @@ __forceinline__ __device__ int idx_hash_with_collision(const int * const key, co
 // }
 
 
-
-
-
-template<int pos_dim, int val_dim>
-__global__ void 
-// __launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
-slice_with_collisions_no_precomputation_fast(
-    const int nr_positions,
-    const int lattice_capacity,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> lattice_values,
-    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> scale_factor,
-    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> sliced_values,
-    torch::PackedTensorAccessor32<int,1,torch::RestrictPtrTraits> splatting_indices,
-    torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> splatting_weights,
-    const bool should_precompute_tensors_for_backward
-    // HashTableGPU hash_table,
-    // torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> values
-    ) {
-
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; //each thread will deal with a new value
-
-
-    if(idx>=nr_positions){ //don't go out of bounds
-        return;
-    }
-
-
-    
-    float elevated[pos_dim + 1];
-
-    //calculate elevated
-    // float scaleFactor[pos_dim];
-    // float invStdDev = (pos_dim + 1) * sqrt(2.0f / 3);
-    // float invStdDev = 1.0;
-    // #pragma unroll
-    // for (int i = 0; i < pos_dim; i++) {
-    //     scaleFactor[i] = 1.0f / (sqrt((float) (i + 1) * (i + 2))) * invStdDev;
-    // }
-    // embed position vector into the hyperplane
-    // first rotate position into the (pd+1)-dimensional hyperplane
-    // sm contains the sum of 1..n of our feature vector
-    float sm = 0;
-    #pragma unroll
-    for (int i = pos_dim; i > 0; i--) {
-        // float cf = position[i*nr_positions - 1*nr_positions] * scaleFactor[i - 1];
-        // float cf = positions[idx][i-1] * scaleFactor[i - 1];
-        float cf = positions[idx][i-1] * scale_factor[i - 1];
-        // float cf = positions[idx][i-1] ;
-        // float cf = position[i - 1] ;
-        elevated[i] = sm - i * cf;
-        sm += cf;
-    }
-    elevated[0] = sm;
-
-
-    int rem0[pos_dim + 1];
-    int rank[pos_dim + 1]{0};
-
-
-   
-
-
-    // Find the closest 0-colored simplex through rounding
-    // greedily search for the closest zero-colored lattice point
-    int sum = 0;
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        float v = elevated[i] * (1.0 / (pos_dim + 1));
-        float up = ceil(v) * (pos_dim + 1);
-        float down = floor(v) * (pos_dim + 1);
-        if (up - elevated[i] < elevated[i] - down) {
-            rem0[i] = (int) up;
-        } else {
-            rem0[i] = (int) down;
-        }
-        sum += rem0[i];
-    }
-    sum /= pos_dim + 1;
-
-
-    // Find the simplex we are in and store it in rank (where rank describes what position coordinate i has in the sorted order of the features values)
-    #pragma unroll
-    for (int i = 0; i < pos_dim; i++) {
-        double di = elevated[i] - rem0[i];
-        for (int j = i + 1; j <= pos_dim; j++)
-            if (di < elevated[j] - rem0[j])
-                rank[i]++;
-            else
-                rank[j]++;
-    }
-
-    // If the point doesn't lie on the plane (sum != 0) bring it back
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        rank[i] += sum;
-        if (rank[i] < 0) {
-            rank[i] += pos_dim + 1;
-            rem0[i] += pos_dim + 1;
-        } else if (rank[i] > pos_dim) {
-            rank[i] -= pos_dim + 1;
-            rem0[i] -= pos_dim + 1;
-        }
-    }
-
-
-
-    float barycentric[pos_dim + 2]{0};
-    // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
-        barycentric[pos_dim - rank[i]] += delta;
-        barycentric[pos_dim + 1 - rank[i]] -= delta;
-    }
-    // Wrap around
-    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
-
-    //smoothstep of the linear interpolation like done in the instant ngp paper
-    // for (int i = 0; i <= pos_dim; i++) {
-        // barycentric[i] = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-        // float smooth_weight = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-        // printf("prev weight is %f, new weight is %f \n", barycentric[i], smooth_weight);
-        //invere smoothstep https://stackoverflow.com/questions/28740544/inverted-smoothstep
-        // if(barycentric[i]>0 && barycentric[i]<1){
-            // barycentric[i] = 0.5 - sin(asin(1.0-2.0*barycentric[i])/3.0);
-        // }
-    // }
-
-    //from higher order barycentric coordinates https://domino.mpi-inf.mpg.de/intranet/ag4/ag4publ.nsf/3b7127147beb1437c125675300686244/637fcbb7f3f5a70fc12573cc00458c99/$FILE/paper.pdf
-    //same as instant ngp
-    // for (int i = 0; i <= pos_dim; i++) {
-        // barycentric[i] = -2* barycentric[i]*barycentric[i] *( barycentric[i] -3.0/2 );
-        // barycentric[i] = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-    // }
-    // //renormalize
-    // float sum_bar=0.0;
-    // for (int i = 0; i <= pos_dim; i++) {
-        // sum_bar+=barycentric[i];
-    // }
-    // printf("sum %f \n", sum_bar);
-    // for (int i = 0; i <= pos_dim; i++) {
-        // barycentric[i]/=sum_bar;
-    // }
-
-
-
-    //here we accumulate the values and the homogeneous term
-    float val_hom[val_dim]{0};
-
-    int key[pos_dim];
-    #pragma unroll
-    for (int remainder = 0; remainder <= pos_dim; remainder++) {
-        // Compute the location of the lattice point explicitly (all but
-        // the last coordinate - it's redundant because they sum to zero)
-        #pragma unroll
-        for (int i = 0; i < pos_dim; i++) {
-            key[i] = static_cast<int>(rem0[i] + remainder);
-            if (rank[i] > pos_dim - remainder)
-                key[i] -= (pos_dim + 1);
-        }
-
-        // Retrieve pointer to the value at this vertex.
-        // int idx_val=hash_table.retrieve_with_collisions(key);
-        int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
-        // float *val = const_cast<float *>(hash_table.m_values + idx_val * val_dim );
-        // float *val = const_cast<float *>(hash_table.m_values + idx_val);
-
-        //store also the splatting indices and weight so that they can be used for the backwards pass
-        if (should_precompute_tensors_for_backward){
-            splatting_indices[idx * (pos_dim + 1) + remainder]=idx_val; //it indexes in m_keys
-            splatting_weights[idx * (pos_dim + 1) + remainder]=barycentric[remainder];
-        }
-        
-
-        //if the vertex exists accumulate its value weighted by the barycentric weight (accumulates also the homogeneous coordinate)
-        // if(idx_val!=-1){
-            #pragma unroll
-            for (int i = 0; i < val_dim ; i++){
-                // printf("accesing val at position i*nr_positions %d idx val is %d for a total of %d \n", i*nr_positions, idx_val, idx_val+i*nr_positions);
-                // val_hom[i]+= val[i*nr_positions]* barycentric[remainder];
-                // values[idx + i*nr_positions]+= val[i*nr_positions]* barycentric[remainder];
-                // sliced_values[idx][i] += values[idx_val][i] * barycentric[remainder];
-                val_hom[i] += lattice_values[idx_val][i] * barycentric[remainder];
-            }
-    
-    }
-
-   
-
-    // //do not divicde by the homogeneous coordinate, rather just store the value as it is because we will afterwards need the homogeneous coordinate for the backwards passs
-    #pragma unroll
-    for (int i = 0; i < val_dim; i++){
-        sliced_values[idx][i]=val_hom[i];
-    }
-
-
-
-}
-
-
-template<int pos_dim, int val_dim>
-__global__ void 
-// __launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
-slice_with_collisions_no_precomputation_fast_mr_loop(
-    const int nr_positions,
-    const int lattice_capacity,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> lattice_values,
-    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> scale_factor,
-    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> sliced_values,
-    torch::PackedTensorAccessor32<int,1,torch::RestrictPtrTraits> splatting_indices,
-    torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> splatting_weights,
-    const bool should_precompute_tensors_for_backward
-    ) {
-
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; //each thread will deal with a new value
-
-
-    if(idx>=nr_positions){ //don't go out of bounds
-        return;
-    }
-
-
-    
-    float elevated[pos_dim + 1];
-
-   
-    float sm = 0;
-    #pragma unroll
-    for (int i = pos_dim; i > 0; i--) {
-        float cf = positions[idx][i-1] * scale_factor[i - 1];
-        elevated[i] = sm - i * cf;
-        sm += cf;
-    }
-    elevated[0] = sm;
-
-
-    int rem0[pos_dim + 1];
-    int rank[pos_dim + 1]{0};
-
-
-
-
-    // Find the closest 0-colored simplex through rounding
-    // greedily search for the closest zero-colored lattice point
-    int sum = 0;
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        float v = elevated[i] * (1.0 / (pos_dim + 1));
-        float up = ceil(v) * (pos_dim + 1);
-        float down = floor(v) * (pos_dim + 1);
-        if (up - elevated[i] < elevated[i] - down) {
-            rem0[i] = (int) up;
-        } else {
-            rem0[i] = (int) down;
-        }
-        sum += rem0[i];
-    }
-    sum /= pos_dim + 1;
-
-
-    // Find the simplex we are in and store it in rank (where rank describes what position coordinate i has in the sorted order of the features values)
-    #pragma unroll
-    for (int i = 0; i < pos_dim; i++) {
-        double di = elevated[i] - rem0[i];
-        for (int j = i + 1; j <= pos_dim; j++)
-            if (di < elevated[j] - rem0[j])
-                rank[i]++;
-            else
-                rank[j]++;
-    }
-
-    // If the point doesn't lie on the plane (sum != 0) bring it back
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        rank[i] += sum;
-        if (rank[i] < 0) {
-            rank[i] += pos_dim + 1;
-            rem0[i] += pos_dim + 1;
-        } else if (rank[i] > pos_dim) {
-            rank[i] -= pos_dim + 1;
-            rem0[i] -= pos_dim + 1;
-        }
-    }
-
-
-
-    float barycentric[pos_dim + 2]{0};
-    // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
-        barycentric[pos_dim - rank[i]] += delta;
-        barycentric[pos_dim + 1 - rank[i]] -= delta;
-    }
-    // Wrap around
-    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
-
-
-    //here we accumulate the values and the homogeneous term
-    float val_hom[val_dim]{0};
-
-    int key[pos_dim];
-    #pragma unroll
-    for (int remainder = 0; remainder <= pos_dim; remainder++) {
-        // Compute the location of the lattice point explicitly (all but
-        // the last coordinate - it's redundant because they sum to zero)
-        #pragma unroll
-        for (int i = 0; i < pos_dim; i++) {
-            key[i] = static_cast<int>(rem0[i] + remainder);
-            if (rank[i] > pos_dim - remainder)
-                key[i] -= (pos_dim + 1);
-        }
-
-        // Retrieve pointer to the value at this vertex.
-        int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
-
-        //store also the splatting indices and weight so that they can be used for the backwards pass
-        if (should_precompute_tensors_for_backward){
-            splatting_indices[idx * (pos_dim + 1) + remainder]=idx_val; //it indexes in m_keys
-            splatting_weights[idx * (pos_dim + 1) + remainder]=barycentric[remainder];
-        }
-        
-
-        //if the vertex exists accumulate its value weighted by the barycentric weight (accumulates also the homogeneous coordinate)
-            #pragma unroll
-            for (int i = 0; i < val_dim ; i++){
-                val_hom[i] += lattice_values[idx_val][i] * barycentric[remainder];
-            }
-    
-    }
-
-   
-
-    // //do not divicde by the homogeneous coordinate, rather just store the value as it is because we will afterwards need the homogeneous coordinate for the backwards passs
-    #pragma unroll
-    for (int i = 0; i < val_dim; i++){
-        sliced_values[idx][i]=val_hom[i];
-        // sliced_values[i][idx]=val_hom[i];
-    }
-
-
-
-}
-
-
-// __constant__ float scalings_constants[14*3];
-
-template<int pos_dim, int val_dim>
-__global__ void 
-// __launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
-slice_with_collisions_no_precomputation_fast_mr_monolithic_no_accessors(
-    const int nr_positions,
-    const int lattice_capacity,
-    const float* positions,
-    float* lattice_values_monolithic,
-    const float* scale_factor,
-    const float* random_shift_monolithic,
-    const float* anneal_window,
-    float* sliced_values_monolithic,
-    // torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> elevated_out,
-    int* splatting_indices,
-    at::Half* splatting_weights,
-    const bool require_lattice_values_grad,
-    const bool require_positions_grad
-    ) {
-
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; //each thread will deal with a new value
-
-
-    if(idx>=nr_positions){ //don't go out of bounds
-        return;
-    }
-
-    const uint32_t level = blockIdx.y; // <- the level is the same for all threads
-    // const uint32_t level = 1; // <- the level is the same for all threads
-
-
-    
-    float elevated[pos_dim + 1];
-
-
-
-
-    float sm = 0;
-    #pragma unroll
-    for (int i = pos_dim; i > 0; i--) {
-        // float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
-
-        float cf = (positions[idx*3+i-1] +random_shift_monolithic[level*3+i-1]  ) * scale_factor[level*3+i-1];
-        
-        elevated[i] = sm - i * cf;
-        sm += cf;
-    }
-    elevated[0] = sm;
-
-
-    int rem0[pos_dim + 1];
-    int rank[pos_dim + 1]{0};
-
-
-
-
-    // Find the closest 0-colored simplex through rounding
-    // greedily search for the closest zero-colored lattice point
-    int sum = 0;
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        float v = elevated[i] * (1.0 / (pos_dim + 1));
-        float up = ceil(v) * (pos_dim + 1);
-        float down = floor(v) * (pos_dim + 1);
-        if (up - elevated[i] < elevated[i] - down) {
-            rem0[i] = (int) up;
-        } else {
-            rem0[i] = (int) down;
-        }
-        sum += rem0[i];
-    }
-    sum /= pos_dim + 1;
-
-
-    // Find the simplex we are in and store it in rank (where rank describes what position coordinate i has in the sorted order of the features values)
-    #pragma unroll
-    for (int i = 0; i < pos_dim; i++) {
-        double di = elevated[i] - rem0[i];
-        for (int j = i + 1; j <= pos_dim; j++)
-            if (di < elevated[j] - rem0[j])
-                rank[i]++;
-            else
-                rank[j]++;
-    }
-
-    // If the point doesn't lie on the plane (sum != 0) bring it back
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        rank[i] += sum;
-        if (rank[i] < 0) {
-            rank[i] += pos_dim + 1;
-            rem0[i] += pos_dim + 1;
-        } else if (rank[i] > pos_dim) {
-            rank[i] -= pos_dim + 1;
-            rem0[i] -= pos_dim + 1;
-        }
-    }
-
-
-
-    float barycentric[pos_dim + 2]{0};
-    // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
-    #pragma unroll
-    for (int i = 0; i <= pos_dim; i++) {
-        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
-        barycentric[pos_dim - rank[i]] += delta;
-        barycentric[pos_dim + 1 - rank[i]] -= delta;
-    }
-    // Wrap around
-    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
-
-
-
-    //smoothstep of the linear interpolation like done in the instant ngp paper
-    // for (int i = 0; i <= pos_dim; i++) {
-        // barycentric[i] = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-        // float smooth_weight = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-        // printf("prev weight is %f, new weight is %f \n", barycentric[i], smooth_weight);
-        //invere smoothstep https://stackoverflow.com/questions/28740544/inverted-smoothstep
-        // if(barycentric[i]>0 && barycentric[i]<1){
-            // barycentric[i] = 0.5 - sin(asin(1.0-2.0*barycentric[i])/3.0);
-        // }
-    // }
-
-    //from higher order barycentric coordinates https://domino.mpi-inf.mpg.de/intranet/ag4/ag4publ.nsf/3b7127147beb1437c125675300686244/637fcbb7f3f5a70fc12573cc00458c99/$FILE/paper.pdf
-    //same as instant ngp
-    // for (int i = 0; i <= pos_dim; i++) {
-        // barycentric[i] = -2* barycentric[i]*barycentric[i] *( barycentric[i] -3.0/2 );
-        // barycentric[i] = barycentric[i]*barycentric[i] *(3-2*barycentric[i]);
-    // }
-    // //renormalize
-    // float sum_bar=0.0;
-    // for (int i = 0; i <= pos_dim; i++) {
-        // sum_bar+=barycentric[i];
-    // }
-    // printf("sum %f \n", sum_bar);
-    // for (int i = 0; i <= pos_dim; i++) {
-        // barycentric[i]/=sum_bar;
-    // }
-
-
-    //attempt 2 like in page 83/146 https://core.ac.uk/download/pdf/85209106.pdf
-    // for (int i = 0; i <= pos_dim; i++) {
-    //     barycentric[i]=barycentric_to_c2_continous(barycentric[i]);
-    // }
-    // //renormalize
-    // float sum_bar=0.0;
-    // for (int i = 0; i <= pos_dim; i++) {
-    //     sum_bar+=barycentric[i];
-    // }
-    // // printf("sum %f \n", sum_bar);
-    // for (int i = 0; i <= pos_dim; i++) {
-    //     barycentric[i]/=sum_bar;
-    // }
-
-
-    
-
-
-
-
-
-    //here we accumulate the values and the homogeneous term
-    // float val_hom[val_dim]{0};
-    float2 val_hom;
-    val_hom.x=0;
-    val_hom.y=0;
-
-    float w_lvl= anneal_window[level];
-
-    int key[pos_dim];
-    #pragma unroll
-    for (int remainder = 0; remainder <= pos_dim; remainder++) {
-        // Compute the location of the lattice point explicitly (all but
-        // the last coordinate - it's redundant because they sum to zero)
-        #pragma unroll
-        for (int i = 0; i < pos_dim; i++) {
-            key[i] = static_cast<int>(rem0[i] + remainder);
-            if (rank[i] > pos_dim - remainder)
-                key[i] -= (pos_dim + 1);
-        }
-
-        // Retrieve pointer to the value at this vertex.
-        int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
-
-        //store also the splatting indices and weight so that they can be used for the backwards pass
-        if (require_lattice_values_grad || require_positions_grad){
-            // splatting_indices[level][remainder][idx]=idx_val;
-            // splatting_weights[level][remainder][idx]=barycentric[remainder] * w_lvl; //we save the barycentric with the anneal window so in the backward pass everything is masked correct by the annealed mask
-
-             splatting_indices[level*nr_positions*4 + remainder*nr_positions+idx]=idx_val;
-             splatting_weights[level*nr_positions*4 + remainder*nr_positions+idx]=barycentric[remainder] * w_lvl;
-
-        }
-        
-
-        //if the vertex exists accumulate its value weighted by the barycentric weight (accumulates also the homogeneous coordinate)
-            // #pragma unroll
-            float w= barycentric[remainder] * w_lvl;
-            // for (int i = 0; i < val_dim ; i++){
-                // val_hom[i] += lattice_values_monolithic[level][idx_val][i] * w;
-
-
-                // float* fv=&lattice_values_monolithic[level][idx_val][0];
-                // float2 new_val=reinterpret_cast<float2*>( fv )[0];
-                // val_hom.x += val_hom.x + new_val.x*w;
-                // val_hom.y += val_hom.y + new_val.y*w;
-
-
-                //get ptr to this value of the vertex
-                float* fv=lattice_values_monolithic + (level*2*lattice_capacity+idx_val*2);
-                float2 new_val=reinterpret_cast<float2*>( fv )[0];
-                val_hom.x += val_hom.x + new_val.x*w;
-                val_hom.y += val_hom.y + new_val.y*w;
-
-
-    
-    }
-
-   
-
-    // //do not divicde by the homogeneous coordinate, rather just store the value as it is because we will afterwards need the homogeneous coordinate for the backwards passs
-    // #pragma unroll
-    // for (int i = 0; i < val_dim; i++){
-
-        // sliced_values_monolithic[level][i][idx]=val_hom[i]; //fastest
-    // }
-    // reinterpret_cast<float2*>(sliced_values_monolithic[level][idx])=val_hom;
-
-    // sliced_values_monolithic[level][0][idx]=val_hom.x;
-    // sliced_values_monolithic[level][1][idx]=val_hom.y;
-
-    //store------------
-    sliced_values_monolithic[level*nr_positions*2 + 0*nr_positions + idx]=val_hom.x;
-    sliced_values_monolithic[level*nr_positions*2 + 1*nr_positions + idx]=val_hom.y;
-
-
-    //store but the value is the dense one
-    // sliced_values_monolithic[level][idx][0]=val_hom.x;
-    // sliced_values_monolithic[level][idx][1]=val_hom.y;
-    // sliced_values_monolithic[level*nr_positions*2 + idx*2+0]=val_hom.x;
-    // sliced_values_monolithic[level*nr_positions*2 + idx*2+1]=val_hom.y;
-    // float2* val_to_store_ptr= reinterpret_cast<float2*>( sliced_values_monolithic +(level*nr_positions*2 + idx*2));
-    // val_to_store_ptr[0]=val_hom;
-
-
-
-    
-
-
-
-}
-
-
 template<int pos_dim, int val_dim>
 __global__ void 
 __launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
@@ -1125,26 +147,11 @@ forward_gpu(
     const int nr_resolutions,
     const int nr_resolutions_extra,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
-    #if LATTICE_HALF_PRECISION
-        torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> lattice_values_monolithic,
-    #else
-        torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic,
-    #endif
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> scale_factor,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> random_shift_monolithic,
     const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> anneal_window,
-    // #if LATTICE_HALF_PRECISION
-        // torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> sliced_values_monolithic,
-    // #else
-        torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> sliced_values_monolithic,
-    // #endif
-    // torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> elevated_out,
-    // torch::PackedTensorAccessor32<int,3,torch::RestrictPtrTraits> splatting_indices,
-    // #if LATTICE_HALF_PRECISION
-    //     torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> splatting_weights,
-    // #else 
-    //     torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> splatting_weights,
-    // #endif
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> sliced_values_monolithic,
     const bool concat_points, 
     const float points_scaling,
     const bool require_lattice_values_grad,
@@ -1492,22 +499,6 @@ forward_gpu(
 }
 
 
-
-
-
-
-
-
-
-
-struct __device_builtin__ __builtin_align__(8) __half4
-{
-    __half x, y, z, w;
-};
-
-
-
-
 template<int pos_dim, int val_dim>
 __global__ void 
 __launch_bounds__(BLOCK_SIZE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
@@ -1519,18 +510,8 @@ backward_gpu(
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> scale_factor,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> random_shift_monolithic,
     const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> anneal_window,
-    // const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
-    // #if LATTICE_HALF_PRECISION
-        // const torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
-    // #else
-        const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
-    // #endif
-    // torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic
-    #if LATTICE_HALF_PRECISION 
-        torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad,
-    #else 
-        torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad,
-    #endif
+    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad,
     torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions_grad,
     const bool concat_points,
     const bool require_lattice_values_grad,
@@ -1853,11 +834,7 @@ double_backward_from_positions_gpu(
     const bool concat_points,
     //output
     torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_grad_sliced_values_monolithic,
-    #if LATTICE_HALF_PRECISION 
-        torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad
-    #else 
-        torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad
-    #endif
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad
     ){
 
 
@@ -1869,14 +846,6 @@ double_backward_from_positions_gpu(
     }
 
     const uint32_t level = blockIdx.y; // <- the level is the same for all threads
-
-
-
-
-
-
-
-
 
 
 
@@ -2059,170 +1028,28 @@ double_backward_from_positions_gpu(
     atomicAdd(&grad_grad_sliced_values_monolithic[level][0][idx], grad_grad_sliced_val_cur[0]  );
     atomicAdd(&grad_grad_sliced_values_monolithic[level][1][idx], grad_grad_sliced_val_cur[1]  );
 
-
-
-
-    // if (require_lattice_values_grad){
-    //     #pragma unroll
-    //     for (int remainder = 0; remainder <= pos_dim; remainder++) {
-    //         // Compute the location of the lattice point explicitly (all but
-    //         // the last coordinate - it's redundant because they sum to zero)
-    //         #pragma unroll
-    //         for (int i = 0; i < pos_dim; i++) {
-    //             key[i] = rem0[i] + remainder;
-    //             if (rank[i] > pos_dim - remainder)
-    //                 key[i] -= (pos_dim + 1);
-    //         }
-
-    //         // Retrieve pointer to the value at this vertex.
-    //         int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
-
-
-    //         float w= barycentric[remainder] * w_lvl; 
-
-    //         //do it with only one half2 accumulate 
-    //         #if LATTICE_HALF_PRECISION 
-    //             __half2 weighted_grad;
-    //             weighted_grad.x=__float2half(grad_sliced_val_cur[0]* w);
-    //             weighted_grad.y=__float2half(grad_sliced_val_cur[1]* w);
-    //             __half2* ptr= static_cast<__half2*>((void*)&lattice_values_monolithic_grad[level][idx_val][0]);
-    //             atomicAdd(ptr, weighted_grad  ); 
-    //         #else 
-
-
-    //             //if the vertex exists accumulate its value weighted by the barycentric weight (accumulates also the homogeneous coordinate)
-    //             #pragma unroll
-    //             for (int j = 0; j < val_dim ; j++){
-    //                 // val_hom[i] += lattice_values_monolithic[level][idx_val][i] * barycentric[remainder];
-    //                 // val_hom[i] += lattice_values_monolithic[level][i][idx_val] * barycentric[remainder];
-    //                 float weighted_grad=grad_sliced_val_cur[j]*w;
-    //                 atomicAdd(&lattice_values_monolithic_grad[level][idx_val][j], weighted_grad  );
-    //                 // lattice_values_monolithic[level][j][idx_val]=weighted_grad;
-
-
-    //                 //try to make the atomic add faster like : https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/native/cuda/GridSampler.cuh
-    //                 //slice_back_cuda_with train_sdf and 24 levels takes 3.6 ms
-    //                 //DOES NOT make sense to use this because this is only a special thing for values of types half. For things fo type float still just an atomic add is the best 
-    //                 // unsigned int memory_span = 24*lattice_capacity*2; // it is just the number of elements as shown in https://github.com/pytorch/pytorch/blob/91a5f52f51de9d6aa305d184fe07fe15d20b82c9/aten/src/ATen/native/cuda/GridSampler.cu
-    //                 // fastSpecializedAtomicAdd(lattice_values_monolithic.data(),
-    //                 //   level*lattice_capacity*val_dim + idx_val*val_dim+j,
-    //                 //   memory_span,
-    //                 //   weighted_grad);
-
-    //             }
-
-    //         #endif
-        
-    //     }
-    // }
-
-
-    
-
-    // if(require_positions_grad){
-    //     //We have from upstrema grad the dL/dS which is the derivative of the loss wrt to the sliced value
-    //     //If we require positions grad we want to obtain dL/dPos
-    //     //dL/dPos = dL/dS *dS/dB * dB/dE * dE/dPos
-    //     //We need dS/dB which is the derivative of the sliced value wrt to the barycentric coords
-    //     //We need dB/dE which is the derivative of the barycentric wrt to the elevated value
-    //     //We need dE/dP which is the derivative of the elevated wrt to the position in xyz
-
-    //     //dL/dB  = dL/dS *dS/dB 
-    //     //foward pass is just S=B0*WLvl*V0 + B1*WLvl*V1 etc
-    //     //so dS/dB0 is just W*V0
-    //     float dL_dbarycentric[pos_dim + 2]{0};
-    //     for (int remainder = 0; remainder <= pos_dim; remainder++) {
-    //         //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
-    //         // Compute the location of the lattice point explicitly (all but
-    //         // the last coordinate - it's redundant because they sum to zero)
-    //         #pragma unroll
-    //         for (int i = 0; i < pos_dim; i++) {
-    //             key[i] = rem0[i] + remainder;
-    //             if (rank[i] > pos_dim - remainder)
-    //                 key[i] -= (pos_dim + 1);
-    //         }
-    //         // Retrieve pointer to the value at this vertex.
-    //         int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
-
-    //         //Load the value for this vertex
-    //         const float* fv=&lattice_values_monolithic[level][idx_val][0];
-    //         const float2 val_lattice_vertex=reinterpret_cast<const float2*>( fv )[0];
-    //         //add to the dL_d_barycentric
-    //         dL_dbarycentric[remainder]+=val_lattice_vertex.x*w_lvl   * grad_sliced_val_cur[0];
-    //         dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur[1];
-
-    //     }
-    //     // if(debug) printf("grad sliced is %f, %f\n", grad_sliced_val_cur[0], grad_sliced_val_cur[1]);
-    //     // if(debug) printf("dL_dbarycentric[0] %f, dL_dbarycentric[1] %f, dL_dbarycentric[2] %f, dL_dbarycentric[3] %f\n", dL_dbarycentric[0], dL_dbarycentric[1], dL_dbarycentric[2], dL_dbarycentric[3]);
-
-    //     //dL/dE  = dL/dB *dB/dE
-    //     //In the forward pass of computing B from E there is this wraparound line of barycentric[0] += 1.0 + barycentric[pos_dim + 1];
-    //     //I think this means that the gradient of B[0] gets duplicates in B[0] and also added to barycentric{pos_dim+1}
-    //     //TODO check for correctness here
-    //     dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
-    //     dL_dbarycentric[0]=dL_dbarycentric[0]*2;
-    //     //Now we need to accumulate gradient into elevated from from each barycentric that the particlar elevated affected
-    //     float dL_delevated[pos_dim + 1]{0};
-    //     #pragma unroll
-    //     for (int i = 0; i <= pos_dim; i++) {
-    //         dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0 / (pos_dim + 1));
-    //         dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0 / (pos_dim + 1));
-    //     }
-    //     // if(debug) printf("dL_delevated[0] %f, dL_delevated[1] %f, dL_delevated[2] %f, dL_delevated[3] %f\n", dL_delevated[0], dL_delevated[1], dL_delevated[2], dL_delevated[3]);
-
-    //     //dL/dPos = dL/dE * dE/dPos
-    //     float dL_dPos[pos_dim];
-    //     //I unrolles the loop that computes E from P and I got some local derivatives like 
-    //     //dEx/dPx=Sx  dEx/dPy=Sy
-    //     //dEy/dPx=-Sx  dEy/dPy=Sy  dEy/dPz=Sz
-    //     //dEz/dPy=-2Sy  dEz/dPz=Sz
-    //     //dEw/dPz=-3Sz
-    //     //So we just accumulate these values inot dL_dPos
-    //     //x
-    //     dL_dPos[0]= dL_delevated[0]* scale_factor[level][0] +  
-    //                 dL_delevated[1]* (-scale_factor[level][0]);
-    //     //y
-    //     dL_dPos[1]= dL_delevated[0]* scale_factor[level][1] +  
-    //                 dL_delevated[1]* scale_factor[level][1] +
-    //                 dL_delevated[2]* (-2*scale_factor[level][1]);
-    //     //z
-    //     dL_dPos[2]= dL_delevated[0]* scale_factor[level][2] + 
-    //                 dL_delevated[1]* scale_factor[level][2] +
-    //                 dL_delevated[2]* scale_factor[level][2] +
-    //                 dL_delevated[3]* (-3*scale_factor[level][2]);
-    //     // if(debug) printf("dL_dPos[0] %f, dL_dPos[1] %f, dL_dPos[2] %f\n", dL_dPos[0], dL_dPos[1], dL_dPos[2]);
-    //     //finish
-    //     // printf("dL_dPos[0] %f \n",dL_dPos[0]);
-    //     atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
-    //     atomicAdd(&positions_grad[idx][1], dL_dPos[1]  );
-    //     atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
-    //     //Cannot be done like this because the sums into the positions grad may come from multiple levels so they need to be atomic
-    //     // positions_grad[idx][0]=dL_dPos[0];
-    //     // positions_grad[idx][1]=dL_dPos[1];
-    //     // positions_grad[idx][2]=dL_dPos[2];
-                    
-
-    // }
-
-   
-   
-
-
 }
 
 
 
-//similar to but instead of each thread doing a certain lvl, each thread accumulates gradient over the full val_dim and all the lvls, this makes it easier to accumulate gradient into positions
+//double back
 template<int pos_dim, int val_dim>
 __global__ void 
-__launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
-slice_backwards_with_precomputation_no_homogeneous_mr_monolithic_full_pos(
+__launch_bounds__(BLOCK_SIZE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
+double_backward_from_positions_gpu_1(
     const int nr_positions,
-    const int nr_resolutions,
+    const int lattice_capacity,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> double_positions_grad,
+    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> scale_factor,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> random_shift_monolithic,
+    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> anneal_window,
     const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
-    const torch::PackedTensorAccessor32<int,3,torch::RestrictPtrTraits> splatting_indices,
-    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> splatting_weights,
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic
+    const bool concat_points,
+    //output
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_grad_sliced_values_monolithic,
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad
     ){
 
 
@@ -2233,177 +1060,36 @@ slice_backwards_with_precomputation_no_homogeneous_mr_monolithic_full_pos(
         return;
     }
 
-    // const uint32_t level = blockIdx.y; // <- the level is the same for all threads
-    for(int level=0; level<nr_resolutions; level++){
-
-    
-        #pragma unroll 
-        for(int color=0; color<pos_dim+1; color++){
-            // int index_into_m_entries=round(splatting_indices_and_weights[ idx * (pos_dim + 1)*2 + color*2 + 0]);
-            // int splatting_idx = splatting_indices[ idx * (pos_dim + 1) + color];
-
-            int splatting_idx = splatting_indices[level][color][idx];
-            // int splatting_idx = splatting_indices[level][idx][color];
-
-            if(splatting_idx>=0){
-
-                float weight = splatting_weights[level][color][idx];
-                // float weight = splatting_weights[level][idx][color];
-                
-
-                //acumulate the values
-                #pragma unroll
-                for (int j = 0; j < val_dim; j++) {
-
-                    float weighted_grad=grad_sliced_values_monolithic[level][j][idx]*weight;
-
-                    if(fabs(weighted_grad)>1e-15){
-                        // atomicAdd(&lattice_values_monolithic[level][splatting_idx][j], weighted_grad  );
-                        atomicAdd(&lattice_values_monolithic[level][j][splatting_idx], weighted_grad  );
-                        // #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 200)
-                        // #else 
-                        //     #warning CUDA ARCH NEEDS TO BE AT LEAST 200 IN ORDER TO ENABLE ATOMIC OPERATIONS!
-                        // #endif
-                    }
-                
-                
-                }
-
-            
-            }
-
-
-        }
-    }
-
-
-}
+    const uint32_t level = blockIdx.y; // <- the level is the same for all threads
 
 
 
-
-
-
-
-
-
-
-template<int pos_dim>
-__global__ void 
-elevate_points_gpu(
-    const int nr_positions,  
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
-    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> elevated
-    ){
-
-    // determine where in the thread grid we are
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; //each thread will deal with a new value
-
-    if(idx>=nr_positions){ //don't go out of bounds
-        return;
-    }
-    
-    // float* elevated_point = elevated + idx * (pos_dim + 1);
-    // const float *position = positions + idx * pos_dim;
-    // elevate<pos_dim>(elevated_point, position);
-
-
-    // float elevated[pos_dim + 1];
-    // const float *position = positions + idx * pos_dim;
-    // const float *position = positions + idx;
-    // elevate<pos_dim>(elevated, position);
-
-    //TODO the scale factor can be precomputed
-    float scaleFactor[pos_dim];
-    // float invStdDev = (pos_dim + 1) * sqrt(2.0f / 3);
-    float invStdDev = 1.0;
-    // float invStdDev = 1.0;
-    for (int i = 0; i < pos_dim; i++) {
-        scaleFactor[i] = 1.0f / (sqrt((float) (i + 1) * (i + 2))) * invStdDev;
-    }
-
-    // embed position vector into the hyperplane
-    // first rotate position into the (pd+1)-dimensional hyperplane
-    // sm contains the sum of 1..n of our feature vector
-    float sm = 0;
-    for (int i = pos_dim; i > 0; i--) {
-        // float cf = position[i*nr_positions - 1*nr_positions] * scaleFactor[i - 1];
-        float cf = positions[idx][i-1] * scaleFactor[i - 1];
-        // float cf = position[i - 1] ;
-        elevated[idx][i] = sm - i * cf;
-        sm += cf;
-    }
-    elevated[idx][0] = sm;
-
-}
-
-
-template<int pos_dim>
-__global__ void 
-// __launch_bounds__(BLOCK_SIZE) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
-create_non_differentiable_indices_for_slice_with_collisions_gpu(
-    const int nr_positions,
-    const int lattice_capacity,
-    // const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions_elevated,
-    torch::PackedTensorAccessor32<int,2,torch::RestrictPtrTraits> rem0_matrix,
-    torch::PackedTensorAccessor32<int,2,torch::RestrictPtrTraits> rank_matrix,
-    torch::PackedTensorAccessor32<int,1,torch::RestrictPtrTraits> splatting_indices
-    // HashTableGPU hash_table
-    ) {
-
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; //each thread will deal with a new value
-
-
-    if(idx>=nr_positions){ //don't go out of bounds
-        return;
-    }
-
-
-    
     float elevated[pos_dim + 1];
 
 
-    //calculate_elevated
-    // float scaleFactor[pos_dim];
-    // // float invStdDev = (pos_dim + 1) * sqrt(2.0f / 3);
-    // float invStdDev = 1.0;
-    // for (int i = 0; i < pos_dim; i++) {
-    //     scaleFactor[i] = 1.0f / (sqrt((float) (i + 1) * (i + 2))) * invStdDev;
-    // }
-    // // embed position vector into the hyperplane
-    // // first rotate position into the (pd+1)-dimensional hyperplane
-    // // sm contains the sum of 1..n of our feature vector
-    // float sm = 0;
-    // for (int i = pos_dim; i > 0; i--) {
-    //     // float cf = position[i*nr_positions - 1*nr_positions] * scaleFactor[i - 1];
-    //     float cf = positions[idx][i-1] * scaleFactor[i - 1];
-    //     // float cf = position[i - 1] ;
-    //     elevated[i] = sm - i * cf;
-    //     sm += cf;
-    // }
-    // elevated[0] = sm;
-
-
-    for (int i = 0; i <= pos_dim; i++) { 
-        elevated[i] = positions_elevated[idx][i];
+    float sm = 0;
+    #pragma unroll
+    for (int i = pos_dim; i > 0; i--) {
+        float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
+        // float cf = positions[idx][i-1] * scalings_constants[(i - 1)  + level*3];
+        // float cf = positions[idx][i-1] * scalings[(i - 1)  + level*3];
+        // float cf = positions[i-1][idx] * scale_factor[level][i - 1];
+        elevated[i] = sm - i * cf;
+        sm += cf;
     }
-
-
-
-
+    elevated[0] = sm;
 
 
     int rem0[pos_dim + 1];
     int rank[pos_dim + 1]{0};
 
 
-   
 
 
     // Find the closest 0-colored simplex through rounding
     // greedily search for the closest zero-colored lattice point
     int sum = 0;
+    #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
         float v = elevated[i] * (1.0 / (pos_dim + 1));
         float up = ceil(v) * (pos_dim + 1);
@@ -2419,6 +1105,7 @@ create_non_differentiable_indices_for_slice_with_collisions_gpu(
 
 
     // Find the simplex we are in and store it in rank (where rank describes what position coordinate i has in the sorted order of the features values)
+    #pragma unroll
     for (int i = 0; i < pos_dim; i++) {
         double di = elevated[i] - rem0[i];
         for (int j = i + 1; j <= pos_dim; j++)
@@ -2429,6 +1116,7 @@ create_non_differentiable_indices_for_slice_with_collisions_gpu(
     }
 
     // If the point doesn't lie on the plane (sum != 0) bring it back
+    #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
         rank[i] += sum;
         if (rank[i] < 0) {
@@ -2442,60 +1130,333 @@ create_non_differentiable_indices_for_slice_with_collisions_gpu(
 
 
 
-    // float barycentric[pos_dim + 2]{0};
-    // // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
-    // for (int i = 0; i <= pos_dim; i++) {
-    //     float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
-    //     barycentric[pos_dim - rank[i]] += delta;
-    //     barycentric[pos_dim + 1 - rank[i]] -= delta;
-    // }
-    // // Wrap around
-    // barycentric[0] += 1.0 + barycentric[pos_dim + 1];
+    float barycentric[pos_dim + 2]{0};
+    // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
+    #pragma unroll
+    for (int i = 0; i <= pos_dim; i++) {
+        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
+        barycentric[pos_dim - rank[i]] += delta;
+        barycentric[pos_dim + 1 - rank[i]] -= delta;
+    }
+    // Wrap around
+    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
 
 
 
-    //here we accumulate the values and the homogeneous term
-    // float val_hom[val_dim]{0};
+    
+
+    float w_lvl= anneal_window[level];
+
+    //get the value at the position
+    float grad_sliced_val_cur[val_dim];
+    #if LATTICE_HALF_PRECISION 
+        #pragma unroll
+        for (int j = 0; j < val_dim; j++) {
+            grad_sliced_val_cur[j]=__half2float(grad_sliced_values_monolithic[level][j][idx]);
+        }
+    #else 
+        #pragma unroll
+        for (int j = 0; j < val_dim; j++) {
+            grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
+        }
+    #endif
+
+    // //get eh gradient at the curent position
+    float grad_p_cur[pos_dim];
+    #pragma unroll
+    for (int j = 0; j < pos_dim; j++) {
+        grad_p_cur[j]=double_positions_grad[idx][j];
+    }
+
+
 
     int key[pos_dim];
+
+
+    //We have upstream gradient dL/dPos which is double_positions_grad
+    //we want dL/dV and dL/dS, so we want to push the gradient into lattice_values_monolithic_grad    grad_grad_sliced_values_monolithic
+    // dL/dS = dL/dP * dP/dE * dE/dB * dB/dS
+    // dL/dV = dL/dP * dP/dE * dE/dB * dB/dV
+    //STARTING
+    // dP/dE 
+    float dL_delevated[pos_dim + 1]{0};
+    dL_delevated[0] =   grad_p_cur[0] * scale_factor[level][0] + 
+                        grad_p_cur[1] * scale_factor[level][1] +
+                        grad_p_cur[2] * scale_factor[level][2];
+    dL_delevated[1] =   grad_p_cur[0] * (-scale_factor[level][0]) + 
+                        grad_p_cur[1] * scale_factor[level][1] +
+                        grad_p_cur[2] * scale_factor[level][2];
+    dL_delevated[2] =   grad_p_cur[1] * (-2*scale_factor[level][1]) +
+                        grad_p_cur[2] * scale_factor[level][2];
+    dL_delevated[3] =   grad_p_cur[2] * (-3*scale_factor[level][2]);
+    // dE/dB
+    float dL_dbarycentric[pos_dim + 2]{0};
+    //in the forward pass we did:
+    // dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
+    // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
+    // float dL_delevated[pos_dim + 1]{0};
+    // #pragma unroll
+    // for (int i = 0; i <= pos_dim; i++) {
+    //     dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0 / (pos_dim + 1));
+    //     dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0 / (pos_dim + 1));
+    // }
+    //So now we do this
+    for (int i = 0; i <= pos_dim; i++) {
+        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0 / (pos_dim + 1));
+        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0 / (pos_dim + 1));
+    }
+    // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
+    dL_dbarycentric[0] += dL_dbarycentric[pos_dim + 1];
+    //push gradient into values_lattice and grad_sliced
+    // float grad_grad_sliced_val_cur[val_dim]{0};
     for (int remainder = 0; remainder <= pos_dim; remainder++) {
+        //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
         // Compute the location of the lattice point explicitly (all but
         // the last coordinate - it's redundant because they sum to zero)
+        #pragma unroll
         for (int i = 0; i < pos_dim; i++) {
-            key[i] = static_cast<int>(rem0[i] + remainder);
+            key[i] = rem0[i] + remainder;
             if (rank[i] > pos_dim - remainder)
                 key[i] -= (pos_dim + 1);
         }
-
-        // int idx_val=hash_table.retrieve_with_collisions(key);
+        // Retrieve pointer to the value at this vertex.
         int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
 
-        
-        //store also the splatting indices and weight so that they can be used for the backwards pass
-        splatting_indices[idx * (pos_dim + 1) + remainder]=idx_val; //it indexes in m_keys
-       
-    
+        //Load the value for this vertex
+        // const float* fv=&lattice_values_monolithic[level][idx_val][0];
+        // const float2 val_lattice_vertex=reinterpret_cast<const float2*>( fv )[0];
+        //add to the dL_d_barycentric
+        // dL_dbarycentric[remainder]+=val_lattice_vertex.x*w_lvl   * grad_sliced_val_cur[0];
+        // dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur[1];
+        // lattice_values_monolithic_grad[level][idx_val][0] += dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0];
+        // lattice_values_monolithic_grad[level][idx_val][1] += dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1];
+        atomicAdd(&lattice_values_monolithic_grad[level][idx_val][0], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
+        atomicAdd(&lattice_values_monolithic_grad[level][idx_val][1], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
+
+
+        // push gradient into grad_sliced_val_cur
+        // grad_sliced_val_cur add towards all the barycentric coord, so in the backward pass the gradient from b0 to all the grad_sliced_val_cur
+        // grad_grad_sliced_val_cur[0]+=dL_dbarycentric[remainder]* w_lvl * val_lattice_vertex.x;
+        // grad_grad_sliced_val_cur[1]+=dL_dbarycentric[remainder]* w_lvl * val_lattice_vertex.y;
     }
-
-    //store also the rem0 and rank
-    for (int i = 0; i <= pos_dim; i++) {
-        rem0_matrix[idx][i]=rem0[i];
-    }
-    for (int i = 0; i <= pos_dim; i++) {
-        rank_matrix[idx][i]=rank[i];
-    }
-
-
-   
-
-   
-
-
+    //finish the accumulation of grad_grad_sliced
+    // atomicAdd(&grad_grad_sliced_values_monolithic[level][0][idx], grad_grad_sliced_val_cur[0]  );
+    // atomicAdd(&grad_grad_sliced_values_monolithic[level][1][idx], grad_grad_sliced_val_cur[1]  );
 
 }
 
+//double back
+template<int pos_dim, int val_dim>
+__global__ void 
+__launch_bounds__(BLOCK_SIZE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
+double_backward_from_positions_gpu_2(
+    const int nr_positions,
+    const int lattice_capacity,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> double_positions_grad,
+    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> scale_factor,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> random_shift_monolithic,
+    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> anneal_window,
+    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
+    const bool concat_points,
+    //output
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_grad_sliced_values_monolithic,
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad
+    ){
 
 
+    //values_vertices refers to the values that the lattice had in the forward pass. it has size m_hash_table_capcity x (val_dim+1)
+    //grad_sliced_values is the gradient of the loss with respect to the sliced out values which has size nr_positions x val_dim
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x; // each thread will deal with one position
+    if(idx >= nr_positions){
+        return;
+    }
+
+    const uint32_t level = blockIdx.y; // <- the level is the same for all threads
+
+
+
+    float elevated[pos_dim + 1];
+
+
+    float sm = 0;
+    #pragma unroll
+    for (int i = pos_dim; i > 0; i--) {
+        float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
+        // float cf = positions[idx][i-1] * scalings_constants[(i - 1)  + level*3];
+        // float cf = positions[idx][i-1] * scalings[(i - 1)  + level*3];
+        // float cf = positions[i-1][idx] * scale_factor[level][i - 1];
+        elevated[i] = sm - i * cf;
+        sm += cf;
+    }
+    elevated[0] = sm;
+
+
+    int rem0[pos_dim + 1];
+    int rank[pos_dim + 1]{0};
+
+
+
+
+    // Find the closest 0-colored simplex through rounding
+    // greedily search for the closest zero-colored lattice point
+    int sum = 0;
+    #pragma unroll
+    for (int i = 0; i <= pos_dim; i++) {
+        float v = elevated[i] * (1.0 / (pos_dim + 1));
+        float up = ceil(v) * (pos_dim + 1);
+        float down = floor(v) * (pos_dim + 1);
+        if (up - elevated[i] < elevated[i] - down) {
+            rem0[i] = (int) up;
+        } else {
+            rem0[i] = (int) down;
+        }
+        sum += rem0[i];
+    }
+    sum /= pos_dim + 1;
+
+
+    // Find the simplex we are in and store it in rank (where rank describes what position coordinate i has in the sorted order of the features values)
+    #pragma unroll
+    for (int i = 0; i < pos_dim; i++) {
+        double di = elevated[i] - rem0[i];
+        for (int j = i + 1; j <= pos_dim; j++)
+            if (di < elevated[j] - rem0[j])
+                rank[i]++;
+            else
+                rank[j]++;
+    }
+
+    // If the point doesn't lie on the plane (sum != 0) bring it back
+    #pragma unroll
+    for (int i = 0; i <= pos_dim; i++) {
+        rank[i] += sum;
+        if (rank[i] < 0) {
+            rank[i] += pos_dim + 1;
+            rem0[i] += pos_dim + 1;
+        } else if (rank[i] > pos_dim) {
+            rank[i] -= pos_dim + 1;
+            rem0[i] -= pos_dim + 1;
+        }
+    }
+
+
+
+    float barycentric[pos_dim + 2]{0};
+    // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
+    #pragma unroll
+    for (int i = 0; i <= pos_dim; i++) {
+        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
+        barycentric[pos_dim - rank[i]] += delta;
+        barycentric[pos_dim + 1 - rank[i]] -= delta;
+    }
+    // Wrap around
+    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
+
+
+
+    
+
+    float w_lvl= anneal_window[level];
+
+    //get the value at the position
+    // float grad_sliced_val_cur[val_dim];
+    // #if LATTICE_HALF_PRECISION 
+    //     #pragma unroll
+    //     for (int j = 0; j < val_dim; j++) {
+    //         grad_sliced_val_cur[j]=__half2float(grad_sliced_values_monolithic[level][j][idx]);
+    //     }
+    // #else 
+    //     #pragma unroll
+    //     for (int j = 0; j < val_dim; j++) {
+    //         grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
+    //     }
+    // #endif
+
+    //get eh gradient at the curent position
+    float grad_p_cur[pos_dim];
+    #pragma unroll
+    for (int j = 0; j < pos_dim; j++) {
+        grad_p_cur[j]=double_positions_grad[idx][j];
+    }
+
+
+
+    int key[pos_dim];
+
+
+    //We have upstream gradient dL/dPos which is double_positions_grad
+    //we want dL/dV and dL/dS, so we want to push the gradient into lattice_values_monolithic_grad    grad_grad_sliced_values_monolithic
+    // dL/dS = dL/dP * dP/dE * dE/dB * dB/dS
+    // dL/dV = dL/dP * dP/dE * dE/dB * dB/dV
+    //STARTING
+    // dP/dE 
+    float dL_delevated[pos_dim + 1]{0};
+    dL_delevated[0] =   grad_p_cur[0] * scale_factor[level][0] + 
+                        grad_p_cur[1] * scale_factor[level][1] +
+                        grad_p_cur[2] * scale_factor[level][2];
+    dL_delevated[1] =   grad_p_cur[0] * (-scale_factor[level][0]) + 
+                        grad_p_cur[1] * scale_factor[level][1] +
+                        grad_p_cur[2] * scale_factor[level][2];
+    dL_delevated[2] =   grad_p_cur[1] * (-2*scale_factor[level][1]) +
+                        grad_p_cur[2] * scale_factor[level][2];
+    dL_delevated[3] =   grad_p_cur[2] * (-3*scale_factor[level][2]);
+    // dE/dB
+    float dL_dbarycentric[pos_dim + 2]{0};
+    //in the forward pass we did:
+    // dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
+    // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
+    // float dL_delevated[pos_dim + 1]{0};
+    // #pragma unroll
+    // for (int i = 0; i <= pos_dim; i++) {
+    //     dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0 / (pos_dim + 1));
+    //     dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0 / (pos_dim + 1));
+    // }
+    //So now we do this
+    for (int i = 0; i <= pos_dim; i++) {
+        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0 / (pos_dim + 1));
+        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0 / (pos_dim + 1));
+    }
+    // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
+    dL_dbarycentric[0] += dL_dbarycentric[pos_dim + 1];
+    //push gradient into values_lattice and grad_sliced
+    float grad_grad_sliced_val_cur[val_dim]{0};
+    for (int remainder = 0; remainder <= pos_dim; remainder++) {
+        //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
+        // Compute the location of the lattice point explicitly (all but
+        // the last coordinate - it's redundant because they sum to zero)
+        #pragma unroll
+        for (int i = 0; i < pos_dim; i++) {
+            key[i] = rem0[i] + remainder;
+            if (rank[i] > pos_dim - remainder)
+                key[i] -= (pos_dim + 1);
+        }
+        // Retrieve pointer to the value at this vertex.
+        int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
+
+        //Load the value for this vertex
+        const float* fv=&lattice_values_monolithic[level][idx_val][0];
+        const float2 val_lattice_vertex=reinterpret_cast<const float2*>( fv )[0];
+        //add to the dL_d_barycentric
+        // dL_dbarycentric[remainder]+=val_lattice_vertex.x*w_lvl   * grad_sliced_val_cur[0];
+        // dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur[1];
+        // lattice_values_monolithic_grad[level][idx_val][0] += dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0];
+        // lattice_values_monolithic_grad[level][idx_val][1] += dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1];
+        // atomicAdd(&lattice_values_monolithic_grad[level][idx_val][0], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
+        // atomicAdd(&lattice_values_monolithic_grad[level][idx_val][1], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
+
+
+        // push gradient into grad_sliced_val_cur
+        // grad_sliced_val_cur add towards all the barycentric coord, so in the backward pass the gradient from b0 to all the grad_sliced_val_cur
+        grad_grad_sliced_val_cur[0]+=dL_dbarycentric[remainder]* w_lvl * val_lattice_vertex.x;
+        grad_grad_sliced_val_cur[1]+=dL_dbarycentric[remainder]* w_lvl * val_lattice_vertex.y;
+    }
+    //finish the accumulation of grad_grad_sliced
+    atomicAdd(&grad_grad_sliced_values_monolithic[level][0][idx], grad_grad_sliced_val_cur[0]  );
+    atomicAdd(&grad_grad_sliced_values_monolithic[level][1][idx], grad_grad_sliced_val_cur[1]  );
+
+}
 
 
 

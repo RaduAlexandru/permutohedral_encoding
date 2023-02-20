@@ -113,18 +113,6 @@ public:
     std::tuple<torch::Tensor, torch::Tensor> double_backward_from_positions(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic);
     
 
-
-
-
-
-
-   
-    // torch::Tensor compute_scale_factor_tensor(const std::vector<float> sigmas_list, const int pos_dim);
-
-
-    
-   
-
    
 
 private:
@@ -199,5 +187,3 @@ private:
 };
 
 
-
-// #include "../src/Encoding.cu"

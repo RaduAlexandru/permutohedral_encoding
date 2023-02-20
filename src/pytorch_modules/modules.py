@@ -36,6 +36,11 @@ class PermutoEncoding(torch.nn.Module):
 		self.anneal_window=torch.ones((nr_levels)).cuda()
 
 
+		#per_lvl multiplier. Makes the convergence slightly faster as it can easily dampen frequencies that are not required for the current scene
+		#howver also makes the slicing almost twice as slow
+		# self.per_lvl_multiplier=torch.nn.Parameter( torch.ones((nr_levels)).cuda() )
+
+
 		#make the lattice wrapper
 		fixed_params=_C.EncodingFixedParams(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, self.random_shift_per_level, self.concat_points, self.concat_points_scaling)
 		self.lattice=_C.EncodingWrapper.create(self.pos_dim, self.nr_feat_per_level, fixed_params)
@@ -56,7 +61,10 @@ class PermutoEncoding(torch.nn.Module):
 		require_lattice_values_grad= self.lattice_values.requires_grad and torch.is_grad_enabled()
 		require_positions_grad=  positions.requires_grad and torch.is_grad_enabled()
 
-		
+
+		# print("self.per_lvl_multiplier", self.per_lvl_multiplier.min(), self.per_lvl_multiplier.max())
+		# print("per_lvl_multiplier",self.per_lvl_multiplier)
+
 		sliced_values= PermutoEncodingFunc.apply(self.lattice, self.lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad)
 
 		sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
