@@ -15,10 +15,10 @@ scale_list=np.geomspace(coarsest_scale, finest_scale, num=nr_levels)
 encoding=permuto_enc.PermutoEncoding(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_list, appply_random_shift_per_level=True, concat_points=False, concat_points_scaling=1.0)
 
 
-print("printing params")
-for param in encoding.parameters():
-    print("param is ", param)
-print("finished printing params")
+# print("printing params")
+# for param in encoding.parameters():
+    # print("param is ", param)
+# print("finished printing params")
 
 #optimizer 
 optimizer=torch.optim.AdamW(encoding.parameters(), lr=3e-4)
