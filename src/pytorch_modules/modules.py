@@ -41,10 +41,10 @@ class PermutoEncoding(torch.nn.Module):
 
 
 		#make the lattice wrapper
-		print("making lattice")
+		# print("making lattice")
 		fixed_params=_C.EncodingFixedParams(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, self.random_shift_per_level, self.concat_points, self.concat_points_scaling)
 		self.lattice=_C.EncodingWrapper.create(self.pos_dim, self.nr_feat_per_level, fixed_params)
-		print("made lattice")
+		# print("made lattice")
 		
 	def forward(self, positions, anneal_window=None):
 
