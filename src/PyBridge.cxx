@@ -39,7 +39,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     .def_static("create", &EncodingWrapper::create<const int, const int, const EncodingFixedParams&> ) //for templated methods like this one we need to explicitly instantiate one of the arguments
     .def("forward", &EncodingWrapper::forward )
     .def("backward", &EncodingWrapper::backward )
-    .def("double_backward", &EncodingWrapper::double_backward )
+    .def("double_backward_from_positions", &EncodingWrapper::double_backward_from_positions )
     ;
 
     // py::class_<Encoding, EncodingBase, std::shared_ptr<Encoding>   > (m, "Encoding")

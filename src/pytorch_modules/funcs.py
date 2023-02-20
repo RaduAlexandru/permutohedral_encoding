@@ -7,7 +7,6 @@ _C=find_package()
 
 class PermutoEncodingFunc(torch.autograd.Function):
 	@staticmethod
-	# def forward(ctx, lattice_values, scale_factor, positions, random_shift_per_level, anneal_window, concat_points, points_scaling, require_lattice_values_grad, require_positions_grad):
 	def forward(ctx, lattice, lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad):
 
 
@@ -67,7 +66,6 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 	def backward(ctx, dummy1, double_lattice_values_grad, double_positions_grad, dummy5, dummy6, dummy7):
 
 
-		# print("double back")
 
 		#in the forward pass of this module we do 
 		#lattice_values_grad, positions_grad = slice_back(lattice_values_monolithic, grad_sliced_values_monolithic, positions)
@@ -79,7 +77,7 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 		input_struct=ctx.input_struct
 
 
-		grad_lattice_values_monolithic, grad_grad_sliced_values_monolithic=lattice.double_backward(input_struct, double_positions_grad,grad_sliced_values_monolithic )
+		grad_lattice_values_monolithic, grad_grad_sliced_values_monolithic=lattice.double_backward_from_positions(input_struct, double_positions_grad,grad_sliced_values_monolithic )
 
 		
 		return None, None, grad_grad_sliced_values_monolithic, grad_lattice_values_monolithic, None, None, None, None, None, None, None, None, None, None
