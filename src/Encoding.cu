@@ -699,6 +699,91 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
 //     return std::make_tuple(lattice_values_monolithic_grad,  grad_grad_sliced_values_monolithic);
 
 // }
+template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
+std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::double_backward(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic){
+
+    check_positions(input.m_positions_raw); 
+    // CHECK(val_dim()>0) << "m_val_dim is 0 or lwoer. We have to splat something first so that we have values from where to slice. Val dim is " << val_dim();
+    int nr_positions=input.m_positions_raw.size(0);
+    int pos_dim=input.m_positions_raw.size(1);
+    // CHECK(pos_dim==this->pos_dim()) << " The position dimension do not coreespond with the ones we used for creating the lattice";
+    CHECK(grad_sliced_values_monolithic.dim()==3) <<"grad_sliced_values_monolithic should be nr_resolutions x val_dim x nr_positions, so it should have 3 dimensions. However it has "<< grad_sliced_values_monolithic.dim();
+    CHECK(grad_sliced_values_monolithic.is_contiguous()) << "Grad sliced values needs to be contiguous. Please call .contiguous() on it";
+    // splatting_indices_tensor=splatting_indices_tensor.contiguous();
+    // splatting_weights_tensor=splatting_weights_tensor.contiguous();
+    int nr_resolutions=grad_sliced_values_monolithic.size(0);
+    int val_dim=grad_sliced_values_monolithic.size(1);
+    CHECK(nr_positions==grad_sliced_values_monolithic.size(2)) << "The nr of positions should match between the input positions and the sliced values";
+    CHECK(input.m_lattice_values.dim()==3) <<"grad_sliced_values_monolithic should be nr_resolutions x val_dim x nr_positions, so it should have 3 dimensions. However it has "<< input.m_lattice_values.dim();
+    CHECK(input.m_lattice_values.is_contiguous()) <<"We assume that the lattice_values_monolithic are contiguous because in the cuda code we make a load of 2 float values at a time and that assumes that they are contiguous";
+
+
+    //if we concat also the points, we add a series of extra resolutions to contain those points
+    int nr_resolutions_extra=0;
+    if (m_fixed_params.m_concat_points){
+        nr_resolutions_extra=std::ceil(float(pos_dim)/val_dim);
+        // VLOG(1) << "grad_sliced_values_monolithic" << grad_sliced_values_monolithic.sizes();
+        // VLOG(1) << "grad_sliced_values_monolithic" << grad_sliced_values_monolithic;
+        // grad_sliced_values_monolithic=grad_sliced_values_monolithic.slice(0, 0, nr_resolutions-nr_resolutions_extra); //dim, start, end
+        // VLOG(1) << "grad_sliced_values_monolithic after slicing" << grad_sliced_values_monolithic.sizes();
+        // VLOG(1) << "grad_sliced_values_monolithic after slicing" << grad_sliced_values_monolithic;
+        nr_resolutions=nr_resolutions-nr_resolutions_extra;
+    }
+
+    int capacity=input.m_lattice_values.size(1);
+    
+
+    // nr_resolutions x nr_lattice_vertices x nr_lattice_featues
+    // Tensor lattice_values_monolithic=torch::zeros({ nr_resolutions, nr_lattice_vertices(), val_dim  },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+    // Tensor lattice_values_monolithic=torch::zeros({ nr_resolutions, val_dim, m_capacity },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+    // TIME_START("slice_b_create_output");
+    Tensor lattice_values_monolithic_grad; //dL/dLattiveValues
+        #if LATTICE_HALF_PRECISION
+            // Tensor lattice_values_monolithic=torch::zeros({ nr_resolutions, val_dim, m_capacity },  torch::dtype(torch::kFloat16).device(torch::kCUDA, 0)  );
+            lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, capacity, val_dim },  torch::dtype(torch::kFloat16).device(torch::kCUDA, 0)  );
+        #else
+            // Tensor lattice_values_monolithic=torch::zeros({ nr_resolutions, val_dim, m_capacity },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+            lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, capacity, val_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+        #endif
+
+
+    Tensor grad_grad_sliced_values_monolithic = torch::zeros({ nr_resolutions+nr_resolutions_extra, val_dim, nr_positions },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+    
+
+
+    
+    // Tensor scale_factor_tensor=scale_factor;
+
+
+    const dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
+
+   
+    slice_double_back_from_positions_grad_gpu<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
+        nr_positions,
+        capacity, 
+        double_positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+        input.m_lattice_values.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
+        input.m_positions_raw.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+        m_fixed_params.m_scale_factor.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+        m_fixed_params.m_random_shift_per_level.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+        input.m_anneal_window.packed_accessor32<float,1,torch::RestrictPtrTraits>(),
+        grad_sliced_values_monolithic.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
+        m_fixed_params.m_concat_points,
+        //output
+        grad_grad_sliced_values_monolithic.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
+        #if LATTICE_HALF_PRECISION
+            lattice_values_monolithic_grad.packed_accessor32<at::Half,3,torch::RestrictPtrTraits>()
+        #else   
+            lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
+        #endif
+    );
+
+    
+   
+
+    return std::make_tuple(lattice_values_monolithic_grad,  grad_grad_sliced_values_monolithic);
+
+}
 
 // template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
 // torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::compute_scale_factor_tensor(const std::vector<float> sigmas_list, const int pos_dim){

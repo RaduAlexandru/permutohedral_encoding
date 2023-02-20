@@ -84,6 +84,7 @@ public:
     // virtual std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> forward(const torch::Tensor& lattice_values, const torch::Tensor& scale_factor, torch::Tensor& positions_raw, torch::Tensor& random_shift_per_level, torch::Tensor& anneal_window, const bool concat_points, const float points_scaling, const bool require_lattice_values_grad, const bool require_positions_grad);###works
     virtual std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> forward(const EncodingInput& input) =0;
     virtual std::tuple<torch::Tensor, torch::Tensor> backward(const EncodingInput& input, torch::Tensor& grad_sliced_values_monolithic) =0;
+    virtual std::tuple<torch::Tensor, torch::Tensor> double_backward(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic) =0;
         
 };
 
@@ -117,6 +118,8 @@ public:
 
     //double backward
     // std::tuple<torch::Tensor, torch::Tensor> slice_double_back_from_positions_grad(const torch::Tensor& double_positions_grad, torch::Tensor& positions_raw, torch::Tensor& lattice_values_monolithic, torch::Tensor& grad_sliced_values_monolithic, const torch::Tensor& scale_factor, torch::Tensor& random_shift_monolithic, torch::Tensor& anneal_window, const bool concat_points);
+    std::tuple<torch::Tensor, torch::Tensor> double_backward(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic);
+    
 
 
 
@@ -219,6 +222,9 @@ public:
     } 
     std::tuple<torch::Tensor, torch::Tensor> backward(const EncodingInput& input, torch::Tensor& grad_sliced_values_monolithic){
         return m_encoding->backward(input, grad_sliced_values_monolithic);
+    }
+    std::tuple<torch::Tensor, torch::Tensor> double_backward(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic){
+        return m_encoding->double_backward(input, double_positions_grad, grad_sliced_values_monolithic);
     }   
 
 

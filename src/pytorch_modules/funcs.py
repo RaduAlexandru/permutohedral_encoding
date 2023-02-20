@@ -94,7 +94,7 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 		#now in the backward pass we have the upstream gradient which is double_lattice_values_grad, double_positions_grad
 		#we want to propagate the double_positions_grad into lattice_values_monolithic and grad_sliced_values_monolithic
 
-		grad_sliced_values_monolithic =ctx.saved_tensors
+		grad_sliced_values_monolithic, =ctx.saved_tensors
 		# concat_points=ctx.concat_points
 		lattice=ctx.lattice
 		input_struct=ctx.input_struct
