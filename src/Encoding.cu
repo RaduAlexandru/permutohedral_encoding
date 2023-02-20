@@ -45,10 +45,7 @@ Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::~Encoding(){
     // LOG(WARNING) << "Deleting lattice: " << m_name;
 }
 
-// template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
-// void Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::test(const torch::Tensor& tensor){
 
-// }
 
 template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
 void Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::check_positions(const torch::Tensor& positions_raw){
@@ -85,7 +82,7 @@ void Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::check_positions_and_values(const torc
 
 
 template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput& input){
+torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput& input){
 
     check_positions(input.m_positions_raw); 
     int nr_positions=input.m_positions_raw.size(0);
@@ -98,9 +95,6 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEA
     //check the anneal window
     CHECK(input.m_anneal_window.size(0)==nr_resolutions ) <<"anneal_window should have the first dimension the same as the nr of resolutions";
 
-     //to cuda
-    // positions_raw=positions_raw.to("cuda");
-    // anneal_window=anneal_window.to("cuda");
 
     Tensor positions=input.m_positions_raw; //the sigma scaling is done inside the kernel
     
@@ -118,25 +112,25 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEA
     Tensor sliced_values_hom_tensor=torch::empty({nr_resolutions+nr_resolutions_extra, val_dim, nr_positions }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
 
     
-    Tensor splatting_indices_tensor;
-    Tensor splatting_weights_tensor;
-    if (input.m_require_lattice_values_grad || input.m_require_positions_grad){
-        splatting_indices_tensor = torch::empty({ nr_resolutions, nr_positions, (pos_dim+1) }, torch::dtype(torch::kInt32).device(torch::kCUDA, 0) );
-        #if LATTICE_HALF_PRECISION
-            splatting_weights_tensor = torch::empty({ nr_resolutions, nr_positions, (pos_dim+1) }, torch::dtype(torch::kFloat16).device(torch::kCUDA, 0) );
-        #else 
-            splatting_weights_tensor = torch::empty({ nr_resolutions, nr_positions, (pos_dim+1) }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
-        #endif
-        splatting_indices_tensor.fill_(-1);
-        // splatting_weights_tensor.fill_(0);
-    }else{
-        splatting_indices_tensor = torch::empty({ 1,1,1 }, torch::dtype(torch::kInt32).device(torch::kCUDA, 0) );
-        #if LATTICE_HALF_PRECISION
-            splatting_weights_tensor = torch::empty({ 1,1,1 }, torch::dtype(torch::kFloat16).device(torch::kCUDA, 0) );
-        #else
-            splatting_weights_tensor = torch::empty({ 1,1,1 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
-        #endif
-    }
+    // Tensor splatting_indices_tensor;
+    // Tensor splatting_weights_tensor;
+    // if (input.m_require_lattice_values_grad || input.m_require_positions_grad){
+    //     splatting_indices_tensor = torch::empty({ nr_resolutions, nr_positions, (pos_dim+1) }, torch::dtype(torch::kInt32).device(torch::kCUDA, 0) );
+    //     #if LATTICE_HALF_PRECISION
+    //         splatting_weights_tensor = torch::empty({ nr_resolutions, nr_positions, (pos_dim+1) }, torch::dtype(torch::kFloat16).device(torch::kCUDA, 0) );
+    //     #else 
+    //         splatting_weights_tensor = torch::empty({ nr_resolutions, nr_positions, (pos_dim+1) }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+    //     #endif
+    //     splatting_indices_tensor.fill_(-1);
+    //     // splatting_weights_tensor.fill_(0);
+    // }else{
+    //     splatting_indices_tensor = torch::empty({ 1,1,1 }, torch::dtype(torch::kInt32).device(torch::kCUDA, 0) );
+    //     #if LATTICE_HALF_PRECISION
+    //         splatting_weights_tensor = torch::empty({ 1,1,1 }, torch::dtype(torch::kFloat16).device(torch::kCUDA, 0) );
+    //     #else
+    //         splatting_weights_tensor = torch::empty({ 1,1,1 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+    //     #endif
+    // }
 
 
 
@@ -170,12 +164,12 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEA
             sliced_values_hom_tensor.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
         // #endif
         // elevated.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
-        splatting_indices_tensor.packed_accessor32<int,3,torch::RestrictPtrTraits>(),   
-        #if LATTICE_HALF_PRECISION
-            splatting_weights_tensor.packed_accessor32<at::Half,3,torch::RestrictPtrTraits>(),   
-        #else 
-            splatting_weights_tensor.packed_accessor32<float,3,torch::RestrictPtrTraits>(),   
-        #endif
+        // splatting_indices_tensor.packed_accessor32<int,3,torch::RestrictPtrTraits>(),   
+        // #if LATTICE_HALF_PRECISION
+        //     splatting_weights_tensor.packed_accessor32<at::Half,3,torch::RestrictPtrTraits>(),   
+        // #else 
+        //     splatting_weights_tensor.packed_accessor32<float,3,torch::RestrictPtrTraits>(),   
+        // #endif
         m_fixed_params.m_concat_points,
         m_fixed_params.m_points_scaling,
         input.m_require_lattice_values_grad,
@@ -184,8 +178,10 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEA
    
 
 
-    auto ret = std::make_tuple (sliced_values_hom_tensor, splatting_indices_tensor, splatting_weights_tensor ); 
-    return ret;
+    // auto ret = std::make_tuple (sliced_values_hom_tensor, splatting_indices_tensor, splatting_weights_tensor ); 
+    // return ret;
+
+    return sliced_values_hom_tensor;
 
 }
 

@@ -65,7 +65,7 @@ class PermutoEncoding(torch.nn.Module):
 		
 		# input_struct=_C.EncodingInput(self.lattice_values, self.positions, anneal_window, require_lattice_values_grad, require_positions_grad)
 		# sliced_values, splatting_indices, splatting_weights= PermutoEncodingFunc.apply(self.lattice_values, self.scale_factor, positions, self.random_shift_per_level, anneal_window, self.concat_points, self.concat_points_scaling, require_lattice_values_grad, require_positions_grad)
-		sliced_values, splatting_indices, splatting_weights= PermutoEncodingFunc.apply(self.lattice, self.lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad)
+		sliced_values= PermutoEncodingFunc.apply(self.lattice, self.lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad)
 
 		sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
 

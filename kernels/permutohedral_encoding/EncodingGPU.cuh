@@ -1139,13 +1139,12 @@ slice_with_collisions_no_precomputation_fast_mr_monolithic(
         torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> sliced_values_monolithic,
     // #endif
     // torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> elevated_out,
-    torch::PackedTensorAccessor32<int,3,torch::RestrictPtrTraits> splatting_indices,
-    // torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> splatting_weights,
-    #if LATTICE_HALF_PRECISION
-        torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> splatting_weights,
-    #else 
-        torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> splatting_weights,
-    #endif
+    // torch::PackedTensorAccessor32<int,3,torch::RestrictPtrTraits> splatting_indices,
+    // #if LATTICE_HALF_PRECISION
+    //     torch::PackedTensorAccessor32<at::Half,3,torch::RestrictPtrTraits> splatting_weights,
+    // #else 
+    //     torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> splatting_weights,
+    // #endif
     const bool concat_points, 
     const float points_scaling,
     const bool require_lattice_values_grad,
@@ -1387,14 +1386,14 @@ slice_with_collisions_no_precomputation_fast_mr_monolithic(
         int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
 
         //store also the splatting indices and weight so that they can be used for the backwards pass
-        if (require_lattice_values_grad || require_positions_grad){
-            // splatting_indices[level][remainder][idx]=idx_val;
-            // splatting_weights[level][remainder][idx]=barycentric[remainder] * w_lvl; //we save the barycentric with the anneal window so in the backward pass everything is masked correct by the annealed mask
+        // if (require_lattice_values_grad || require_positions_grad){
+        //     // splatting_indices[level][remainder][idx]=idx_val;
+        //     // splatting_weights[level][remainder][idx]=barycentric[remainder] * w_lvl; //we save the barycentric with the anneal window so in the backward pass everything is masked correct by the annealed mask
 
-            //tranposed
-            splatting_indices[level][idx][remainder]=idx_val;
-            splatting_weights[level][idx][remainder]=barycentric[remainder] * w_lvl;
-        }
+        //     //tranposed
+        //     splatting_indices[level][idx][remainder]=idx_val;
+        //     splatting_weights[level][idx][remainder]=barycentric[remainder] * w_lvl;
+        // }
         
 
         //if the vertex exists accumulate its value weighted by the barycentric weight (accumulates also the homogeneous coordinate)
