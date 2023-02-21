@@ -66,6 +66,7 @@ void Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::check_positions_and_values(const torc
 
 
 
+
 template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
 torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput& input){
 

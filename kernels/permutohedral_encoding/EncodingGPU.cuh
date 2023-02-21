@@ -596,7 +596,7 @@ backward_gpu(
 //double back
 template<int pos_dim, int val_dim>
 __global__ void 
-__launch_bounds__(BLOCK_SIZE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
+__launch_bounds__(BLOCK_SIZE_DOUBLE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
 double_backward_from_positions_gpu(
     const int nr_positions,
     const int lattice_capacity,
