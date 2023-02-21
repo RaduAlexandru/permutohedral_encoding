@@ -67,7 +67,12 @@ class PermutoEncoding(torch.nn.Module):
 
 		sliced_values= PermutoEncodingFunc.apply(self.lattice, self.lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad)
 
-		sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
+		# sliced_values=sliced_values.permute(2,0,1).reshape(nr_positions, -1) #from lvl, val, nr_positions to nr_positions x lvl x val
+		# sliced_values=sliced_values.view(nr_positions, -1)
+		sliced_values=sliced_values.view(-1,nr_positions).transpose(0,1)
+
+
+		#baseline slice is 1.2ms for slicing during train_sdf
 
 		return sliced_values
 

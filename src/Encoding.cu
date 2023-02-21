@@ -88,10 +88,13 @@ torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput&
     }
 
 
-
     //initialize the output values 
     Tensor sliced_values_hom_tensor=torch::empty({nr_resolutions+nr_resolutions_extra, val_dim, nr_positions }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
 
+
+    //Try other options Rest x nr_positions 
+        //val x res x nr_positions
+    // Tensor sliced_values_hom_tensor=torch::empty({val_dim, nr_resolutions+nr_resolutions_extra, nr_positions }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
   
 
     //try again with a monolithic kernel
@@ -119,9 +122,6 @@ torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput&
     return sliced_values_hom_tensor;
 
 }
-
-
-
 
 
 template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
@@ -191,7 +191,6 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
     return std::make_tuple(lattice_values_monolithic_grad, positions_grad);
 
 }
-
 
 
 template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
