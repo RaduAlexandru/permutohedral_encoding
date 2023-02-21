@@ -6,7 +6,7 @@ import numpy as np
 
 #create encoding
 pos_dim=3
-capacity=262144 #2pow18
+capacity=pow(2,18) 
 nr_levels=24 
 nr_feat_per_level=2 
 coarsest_scale=1.0 ##we tested that at sigma of 4 is when we slice form just one lattice 
@@ -14,37 +14,52 @@ finest_scale=0.0001 #default
 scale_list=np.geomspace(coarsest_scale, finest_scale, num=nr_levels)
 encoding=permuto_enc.PermutoEncoding(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_list, appply_random_shift_per_level=True, concat_points=False, concat_points_scaling=1.0)
 
+#create mlp which processes the encoded points and gives the output
+mlp= torch.nn.Sequential(
+        torch.nn.Linear(encoding.output_dims() ,32),
+        torch.nn.GELU(),
+        torch.nn.Linear(32,32),
+        torch.nn.GELU(),
+        torch.nn.Linear(32,32),
+        torch.nn.GELU(),
+        torch.nn.Linear(32,1)
+    ).cuda()
 
-# print("printing params")
-# for param in encoding.parameters():
-    # print("param is ", param)
-# print("finished printing params")
+#a coarse to fine optimization which anneals the coarse levels of the grid before it starts adding the higher resolution ones
+nr_iters_for_c2f=10000
+c2f=permuto_enc.Coarse2Fine(nr_levels)
 
-#optimizer 
-optimizer=torch.optim.AdamW(encoding.parameters(), lr=3e-4)
+#optimizer
+params = list(encoding.parameters()) + list(mlp.parameters()) 
+optimizer=torch.optim.AdamW(params, lr=3e-4)
 
 #create points
 nr_points=1000
 points=torch.rand(nr_points, pos_dim).cuda()
 
+iter_nr=0
 while True:
 
-    print("---")
+
+    window=c2f( permuto_enc.map_range_val(iter_nr, 0.0, nr_iters_for_c2f, 0.3, 1.0   ) )
 
     #encode
-    features=encoding(points)
+    features=encoding(points,window)
 
-    print("features is ", features.shape)
-    print("features min max", features.min(), features.max())
-
+    #mlp
+    output=mlp(features)
 
     #loss
-    loss=torch.abs(features.mean())
-    print("loss is ", loss)
+    target=10.0
+    loss=torch.abs(output.mean()-target)
+    if(iter_nr%100==0):
+        print("loss is ", loss)
 
     optimizer.zero_grad()
     loss.backward()
-    print("grad min max", encoding.lattice_values.grad.min(), encoding.lattice_values.grad.max())
     optimizer.step()
+
+
+    iter_nr+=1
 
 

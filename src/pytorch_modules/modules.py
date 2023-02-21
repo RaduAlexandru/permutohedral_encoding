@@ -1,6 +1,7 @@
 import torch
 from permutohedral_encoding.pytorch_modules.find_cpp_package import *
 from permutohedral_encoding.pytorch_modules.funcs import *
+from permutohedral_encoding.pytorch_modules.utils import cosine_easing_window
 
 _C=find_package()
 
@@ -72,8 +73,41 @@ class PermutoEncoding(torch.nn.Module):
 		# sliced_values=sliced_values.view(-1,nr_positions).transpose(0,1)
 
 
-		#baseline slice is 1.2ms for slicing during train_sdf
 
 		return sliced_values
+
+	def output_dims(self):
+		#if we concat also the points, we add a series of extra resolutions to contain those points
+		nr_resolutions_extra=0;
+		if self.concat_points:
+			nr_resolutions_extra=ceil(float(self.pos_dim)/self.nr_feat_per_level)
+
+		out_dims=self.nr_feat_per_level*(self.nr_levels + nr_resolutions_extra)
+
+		return out_dims
+
+
+
+
+#coarse2fine  which slowly anneals the weights of a vector of size nr_values. t is between 0 and 1
+class Coarse2Fine(torch.nn.Module):
+	def __init__(self, nr_values):  
+		super(Coarse2Fine, self).__init__()
+		
+		self.nr_values=nr_values 
+		self.last_t=0
+
+	def forward(self, t):
+
+		alpha=t*self.nr_values #becasue cosine_easing_window except the alpha to be in range 0, nr_values
+		window=cosine_easing_window(self.nr_values, alpha)
+
+		self.last_t=t
+		assert t<=1.0,"t cannot be larger than 1.0"
+
+		return window
+
+	def get_last_t(self):
+		return self.last_t
 
 
