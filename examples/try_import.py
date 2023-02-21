@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-# import torch
-# import permutohedral_encoding as penc 
-# help(penc)
-
 
 import importlib
 import torch

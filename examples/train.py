@@ -9,10 +9,10 @@ pos_dim=3
 capacity=pow(2,18) 
 nr_levels=24 
 nr_feat_per_level=2 
-coarsest_scale=1.0 ##we tested that at sigma of 4 is when we slice form just one lattice 
-finest_scale=0.0001 #default
+coarsest_scale=1.0 
+finest_scale=0.0001 
 scale_list=np.geomspace(coarsest_scale, finest_scale, num=nr_levels)
-encoding=permuto_enc.PermutoEncoding(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_list, appply_random_shift_per_level=True, concat_points=False, concat_points_scaling=1.0)
+encoding=permuto_enc.PermutoEncoding(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_list)
 
 #create mlp which processes the encoded points and gives the output
 mlp= torch.nn.Sequential(
