@@ -7,7 +7,7 @@ _C=find_package()
 
 
 class PermutoEncoding(torch.nn.Module):
-	def __init__(self, pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, appply_random_shift_per_level, concat_points, concat_points_scaling):
+	def __init__(self, pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, appply_random_shift_per_level=True, concat_points=False, concat_points_scaling=1.0):
 		super(PermutoEncoding, self).__init__()
 		self.pos_dim=pos_dim 
 		self.capacity=capacity 

@@ -9,8 +9,6 @@ class PermutoEncodingFunc(torch.autograd.Function):
 	@staticmethod
 	def forward(ctx, lattice, lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad):
 
-
-
 		#forward
 		input_struct=_C.EncodingInput(lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad)
 		sliced_values=lattice.forward(input_struct )
@@ -23,9 +21,6 @@ class PermutoEncodingFunc(torch.autograd.Function):
 
 		return sliced_values
 
-
-
-	   
 	@staticmethod
 	def backward(ctx, grad_sliced_values_monolithic):
 
@@ -36,16 +31,12 @@ class PermutoEncodingFunc(torch.autograd.Function):
 
 		assert input_struct.m_require_lattice_values_grad or input_struct.m_require_positions_grad, "We cannot perform the backward function on the slicing because we did not precompute the required tensors in the forward pass. To enable this, set the model.train(), set torch.set_grad_enabled(True) and make lattice_values have required_grad=True"
 	  
-
-
 		#we pass the tensors of lattice_values and positiosn explicitly and not throught the input struct so that we can compute gradients from them for the double backward pass
-		return SliceLatticeWithCollisionFastMRMonolithicBackward.apply(lattice, input_struct, grad_sliced_values_monolithic, input_struct.m_lattice_values, input_struct.m_positions_raw, sliced_values) 
-
-
+		return PermutoEncodingFuncBack.apply(lattice, input_struct, grad_sliced_values_monolithic, input_struct.m_lattice_values, input_struct.m_positions_raw, sliced_values) 
 	   
 
 # in order to enable a double backward like in https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html
-class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function):
+class PermutoEncodingFuncBack(torch.autograd.Function):
 	@staticmethod
 	def forward(ctx, lattice, input_struct, grad_sliced_values_monolithic, lattice_values, positions, sliced_values_hom):
 
@@ -64,8 +55,6 @@ class SliceLatticeWithCollisionFastMRMonolithicBackward(torch.autograd.Function)
 		return None, lattice_values_grad, positions_grad, None, None, None
 	@staticmethod
 	def backward(ctx, dummy1, double_lattice_values_grad, double_positions_grad, dummy5, dummy6, dummy7):
-
-
 
 		#in the forward pass of this module we do 
 		#lattice_values_grad, positions_grad = slice_back(lattice_values_monolithic, grad_sliced_values_monolithic, positions)
