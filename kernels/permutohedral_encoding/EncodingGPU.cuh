@@ -5,8 +5,9 @@
 
 
 
-#define BLOCK_SIZE 128
-#define BLOCK_SIZE_BACK 32
+#define BLOCK_SIZE 256
+#define BLOCK_SIZE_BACK 64
+#define BLOCK_SIZE_DOUBLE_BACK 128
 
 #define LATTICE_HALF_PRECISION 0
 
@@ -315,7 +316,6 @@ forward_gpu(
         // float2 new_val=reinterpret_cast<float2*>( fv )[0];
         // val_hom_vec.x = val_hom_vec.x + new_val.x*w;
         // val_hom_vec.y = val_hom_vec.y + new_val.y*w;
-// awdwad
         float* ptr_base=lattice_values_monolithic.data(); //tensor is nr_levels x capacity x nr_feat
         float* ptr_value=ptr_base+  idx_val*lattice_values_monolithic.stride(1) + level*lattice_values_monolithic.stride(0);
         float2 new_val=reinterpret_cast<float2*>( ptr_value )[0];
@@ -811,7 +811,7 @@ double_backward_from_positions_gpu(
 //double back
 template<int pos_dim, int val_dim>
 __global__ void 
-__launch_bounds__(BLOCK_SIZE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
+__launch_bounds__(BLOCK_SIZE_DOUBLE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
 double_backward_from_positions_gpu_1(
     const int nr_positions,
     const int lattice_capacity,
@@ -1024,7 +1024,7 @@ double_backward_from_positions_gpu_1(
 //double back
 template<int pos_dim, int val_dim>
 __global__ void 
-__launch_bounds__(BLOCK_SIZE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
+__launch_bounds__(BLOCK_SIZE_DOUBLE_BACK) //since the block size is known at compile time we can specify it to the kernel and therefore cuda doesnt need to use heuristics based on code complexity to minimize registry usage
 double_backward_from_positions_gpu_2(
     const int nr_positions,
     const int lattice_capacity,

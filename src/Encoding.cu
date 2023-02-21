@@ -65,6 +65,7 @@ void Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::check_positions_and_values(const torc
 
 
 
+
 template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
 torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput& input){
 
@@ -92,9 +93,7 @@ torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput&
     Tensor sliced_values_hom_tensor=torch::empty({nr_resolutions+nr_resolutions_extra, val_dim, nr_positions }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
 
 
-    //Try other options Rest x nr_positions 
-        //val x res x nr_positions
-    // Tensor sliced_values_hom_tensor=torch::empty({val_dim, nr_resolutions+nr_resolutions_extra, nr_positions }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+ 
   
 
     //try again with a monolithic kernel
@@ -228,10 +227,10 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     
 
 
-    const dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
+    const dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
 
    
-    // double_backward_from_positions_gpu<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
+    // double_backward_from_positions_gpu<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
     //     nr_positions,
     //     capacity, 
     //     double_positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
@@ -248,7 +247,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     // );
 
 
-    double_backward_from_positions_gpu_1<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
+    double_backward_from_positions_gpu_1<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
         nr_positions,
         capacity, 
         double_positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
@@ -264,7 +263,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
         lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
     );
 
-    double_backward_from_positions_gpu_2<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
+    double_backward_from_positions_gpu_2<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
         nr_positions,
         capacity, 
         double_positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
