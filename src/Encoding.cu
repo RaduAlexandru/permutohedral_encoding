@@ -301,6 +301,7 @@ template class Encoding<3,2>;
 template class Encoding<4,2>;
 template class Encoding<5,2>;
 template class Encoding<6,2>;
+template class Encoding<7,2>;
 //for val 4 
 //TODO not implemented other values other than 2 because we assume we load only 2 floats in the CUDA kernels
 

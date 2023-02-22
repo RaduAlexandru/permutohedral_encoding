@@ -135,10 +135,8 @@ template <uint32_t POS_DIM>
 inline std::shared_ptr<EncodingBase> create_encoding_template_pos_dim(const int pos_dim, const int nr_feat_per_level, const EncodingFixedParams& fixed_params){
     switch (nr_feat_per_level){
         case(2): return std::make_shared<Encoding<POS_DIM, 2> >(fixed_params);
-        // case(4): return std::make_shared<Encoding<POS_DIM, 4> >();
-        // case(8): return std::make_shared<Encoding<POS_DIM, 8> >();
-        // case(7) return std::make_shared<Encoding<POS_DIM, 2> >();
-        default: throw std::runtime_error{"Encoding: nr_feat_per_level must be 2,4 or 8"};
+        //TODO cannot add more values at the moment because we have harcoded the CUDA kernels for 2 features per lvl
+        default: throw std::runtime_error{"Encoding: nr_feat_per_level must be 2 since other values are not yet implemented"};
     }  
 }
 //since we need to call template cuda functions we need to create a templated encoding object that has a compile time known pos dim and nr_feat_per_level
@@ -146,11 +144,11 @@ inline std::shared_ptr<EncodingBase> create_encoding(const int pos_dim, const in
     switch (pos_dim){
         // case(2): return create_encoding_template_pos_dim<2>(pos_dim, nr_feat_per_level);
         case(3): return create_encoding_template_pos_dim<3>(pos_dim, nr_feat_per_level, fixed_params);
-        // case(4): return create_encoding_template_pos_dim<4>(pos_dim, nr_feat_per_level);
-        // case(5): return create_encoding_template_pos_dim<5>(pos_dim, nr_feat_per_level);
-        // case(6): return create_encoding_template_pos_dim<6>(pos_dim, nr_feat_per_level);
-        // case(7) return (2, nr_feat_per_level);
-        default: throw std::runtime_error{"Encoding: pos_dim must be 2,3,4,5 or 6"};
+        case(4): return create_encoding_template_pos_dim<4>(pos_dim, nr_feat_per_level, fixed_params);
+        case(5): return create_encoding_template_pos_dim<5>(pos_dim, nr_feat_per_level, fixed_params);
+        case(6): return create_encoding_template_pos_dim<6>(pos_dim, nr_feat_per_level, fixed_params);
+        case(7): return create_encoding_template_pos_dim<7>(pos_dim, nr_feat_per_level, fixed_params);
+        default: throw std::runtime_error{"Encoding: pos_dim must be 2,3,4,5,6 or 7"};
     }
 }
 

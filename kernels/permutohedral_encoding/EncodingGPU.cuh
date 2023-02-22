@@ -12,97 +12,18 @@
 #define LATTICE_HALF_PRECISION 0
 
 
-//fast atomic add for half tensor like https://github.com/pytorch/pytorch/blob/b47ae9810c1a645f4942737ab4a58b2b1407e7bd/aten/src/ATen/native/cuda/KernelUtils.cuh
-template <
-    typename scalar_t,
-    typename index_t,
-    typename std::enable_if<std::is_same<c10::Half, scalar_t>::value>::type* =
-        nullptr>
-__device__ __forceinline__ void fastSpecializedAtomicAdd(
-    scalar_t* tensor,
-    index_t index,
-    const index_t numel,
-    scalar_t value) {
-#if (                      \
-    (defined(USE_ROCM)) || \
-    (defined(CUDA_VERSION) && (CUDA_VERSION < 10000)) || \
-    (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 700)))
-  atomicAdd(
-      reinterpret_cast<at::Half*>(tensor) + index,
-      static_cast<at::Half>(value));
-#else
-  // Accounts for the chance tensor falls on an odd 16 bit alignment (ie, not 32 bit aligned)
-  __half* target_addr = reinterpret_cast<__half*>(tensor + index);
-  bool low_byte = (reinterpret_cast<std::uintptr_t>(target_addr) % sizeof(__half2) == 0);
-
-  if (low_byte && index < (numel - 1)) {
-    __half2 value2;
-    value2.x = value;
-    value2.y = __int2half_rz(0);
-    atomicAdd(reinterpret_cast<__half2*>(target_addr), value2);
-
-  } else if (!low_byte && index > 0) {
-    __half2 value2;
-    value2.x = __int2half_rz(0);
-    value2.y = value;
-    atomicAdd(reinterpret_cast<__half2*>(target_addr - 1), value2);
-
-  } else {
-    atomicAdd(
-        reinterpret_cast<__half*>(tensor) + index, static_cast<__half>(value));
-  }
-#endif
-}
-
-// https://stackoverflow.com/a/466278
-__device__ __forceinline__ constexpr unsigned long upper_power_of_two(unsigned long val){
-    unsigned long v=val;
-    v=v-1;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v=v+1;
-    return v;
-
-
-    // return pow(2, ceil(log(val)/log(2)));
-}
-struct __device_builtin__ __builtin_align__(8) __half4
-{
-    __half x, y, z, w;
-};
-
-
-
-
-
-
-
-
-
-
 
 
 template<int pos_dim>
+/* Hash function used in this implementation. A simple base conversion. */  
 __forceinline__ __device__ unsigned int hash(const int *const key) {
     unsigned int k = 0;
-    // constexpr uint32_t primes[7] = { 1, 2654435761, 805459861, 3674653429, 2097192037, 1434869437, 2165219737 };  //from https://github.com/NVlabs/tiny-cuda-nn/blob/master/include/tiny-cuda-nn/encodings/grid.h
     #pragma unroll
     for (int i = 0; i < pos_dim; i++) {
         k += key[i];
         k = k * 2531011;
-        // k ^=  key[i] * primes[i];
     }
     return k;
-
-    // //do as in voxel hashing: arount line 200 in https://github.com/niessner/VoxelHashing/blob/master/DepthSensingCUDA/Source/VoxelUtilHashSDF.h
-    // const int p0 = 73856093;
-    // const int p1 = 19349669;
-    // const int p2 = 83492791;
-    // unsigned int res = ((key[0] * p0) ^ (key[1] * p1) ^ (key[2] * p2));
-    // return res;
 }
 
 __forceinline__ __device__ int modHash(const unsigned int& n, const int& capacity){
