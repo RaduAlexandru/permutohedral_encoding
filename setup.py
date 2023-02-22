@@ -123,12 +123,6 @@ bindings_dir = os.path.dirname(__file__)
 root_dir = os.path.abspath(bindings_dir)
 base_definitions = []
 base_source_files = [
-	# "tinycudann/bindings.cpp",
-	# "../../dependencies/fmt/src/format.cc",
-	# "../../dependencies/fmt/src/os.cc",
-	# "./src/cpp_api.cu",
-	# "./src/common.cu",
-	# "./src/common_device.cu",
 	"./src/Encoding.cu",
 	"./src/PyBridge.cxx",
 ]
@@ -153,9 +147,6 @@ def make_extension(compute_capability):
 			"%s/include" % root_dir,
 			"%s/kernels" % root_dir,
 			"%s/deps" % root_dir,
-			# "%s/dependencies/cutlass/include" % root_dir,
-			# "%s/dependencies/cutlass/tools/util/include" % root_dir,
-			# "%s/dependencies/fmt/include" % root_dir,
 		],
 		extra_compile_args={"cxx": cflags, "nvcc": nvcc_flags},
 		libraries=["cuda", "cudadevrt", "cudart_static"],

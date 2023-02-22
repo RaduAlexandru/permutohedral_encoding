@@ -26,12 +26,12 @@ mlp= torch.nn.Sequential(
     ).cuda()
 
 #a coarse to fine optimization which anneals the coarse levels of the grid before it starts adding the higher resolution ones
-nr_iters_for_c2f=10000
+nr_iters_for_c2f=1000
 c2f=permuto_enc.Coarse2Fine(nr_levels)
 
 #optimizer
 params = list(encoding.parameters()) + list(mlp.parameters()) 
-optimizer=torch.optim.AdamW(params, lr=3e-4)
+optimizer=torch.optim.AdamW(params, lr=1e-4)
 
 #create points
 nr_points=1000
@@ -51,7 +51,7 @@ while True:
 
     #loss
     target=10.0
-    loss=torch.abs(output.mean()-target)
+    loss=(output-target).mean().abs()
     if(iter_nr%100==0):
         print("loss is ", loss)
 
