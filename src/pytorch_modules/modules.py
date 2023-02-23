@@ -2,6 +2,7 @@ import torch
 from permutohedral_encoding.pytorch_modules.find_cpp_package import *
 from permutohedral_encoding.pytorch_modules.funcs import *
 from permutohedral_encoding.pytorch_modules.utils import cosine_easing_window
+import math
 
 _C=find_package()
 
@@ -80,7 +81,7 @@ class PermutoEncoding(torch.nn.Module):
 		#if we concat also the points, we add a series of extra resolutions to contain those points
 		nr_resolutions_extra=0;
 		if self.concat_points:
-			nr_resolutions_extra=ceil(float(self.pos_dim)/self.nr_feat_per_level)
+			nr_resolutions_extra=math.ceil(float(self.pos_dim)/self.nr_feat_per_level)
 
 		out_dims=self.nr_feat_per_level*(self.nr_levels + nr_resolutions_extra)
 
