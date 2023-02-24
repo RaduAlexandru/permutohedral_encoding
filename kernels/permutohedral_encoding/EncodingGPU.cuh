@@ -5,7 +5,7 @@
 
 
 
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 128
 #define BLOCK_SIZE_BACK 64
 #define BLOCK_SIZE_DOUBLE_BACK 128
 
