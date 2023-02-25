@@ -991,8 +991,11 @@ double_backward_from_positions_gpu_1(
         // dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur[1];
         // lattice_values_monolithic_grad[level][idx_val][0] += dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0];
         // lattice_values_monolithic_grad[level][idx_val][1] += dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1];
-        atomicAdd(&lattice_values_monolithic_grad[level][idx_val][0], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
-        atomicAdd(&lattice_values_monolithic_grad[level][idx_val][1], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
+
+        // atomicAdd(&lattice_values_monolithic_grad[level][idx_val][0], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
+        // atomicAdd(&lattice_values_monolithic_grad[level][idx_val][1], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
+        atomicAdd(&lattice_values_monolithic_grad[level][0][idx_val], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
+        atomicAdd(&lattice_values_monolithic_grad[level][1][idx_val], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
 
 
         // push gradient into grad_sliced_val_cur

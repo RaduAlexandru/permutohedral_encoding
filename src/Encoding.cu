@@ -2,6 +2,7 @@
 
 //c++
 #include <string>
+#include <chrono>
 
 
 //my stuff
@@ -154,6 +155,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
     Tensor lattice_values_monolithic_grad; //dL/dLattiveValues
     if (input.m_require_lattice_values_grad){
         lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, capacity, val_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+        // lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, val_dim, capacity },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
     }else{
         lattice_values_monolithic_grad=torch::empty({ 1,1,1 },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
     }
@@ -172,6 +174,9 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
 
     const dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
 
+
+    // torch::cuda::synchronize();
+    // auto t1 = std::chrono::high_resolution_clock::now();
     backward_gpu<POS_DIM,NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
         nr_positions,
         capacity, 
@@ -189,6 +194,13 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
     );
 
     positions_grad=positions_grad.sum(0);
+
+    // lattice_values_monolithic_grad=lattice_values_monolithic_grad.permute({0,2,1});
+    // torch::cuda::synchronize();
+    // auto t2 = std::chrono::high_resolution_clock::now();
+    // std::cout << "backward took "
+    //           << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+    //           << " milliseconds\n";
 
 
     return std::make_tuple(lattice_values_monolithic_grad, positions_grad);
@@ -223,7 +235,8 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
 
     // nr_resolutions x nr_lattice_vertices x nr_lattice_featues
     //dL/dLattiveValues
-    Tensor lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, capacity, val_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+    // Tensor lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, capacity, val_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+    Tensor lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, val_dim, capacity },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
 
     Tensor grad_grad_sliced_values_monolithic = torch::empty({ nr_resolutions+nr_resolutions_extra, val_dim, nr_positions },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
     
@@ -249,6 +262,9 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     //     lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
     // );
 
+
+    // torch::cuda::synchronize();
+    // auto t1 = std::chrono::high_resolution_clock::now();
     // writes gradient to lattice_values_monolithic_grad
     dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
     double_backward_from_positions_gpu_1<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
@@ -267,7 +283,16 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
         grad_grad_sliced_values_monolithic.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
         lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
     );
+    // torch::cuda::synchronize();
+    // auto t2 = std::chrono::high_resolution_clock::now();
+    // std::cout << "double back 1 took "
+    //           << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+    //           << " milliseconds\n";
 
+
+
+    // torch::cuda::synchronize();
+    // auto t3 = std::chrono::high_resolution_clock::now();
     //writes gradient to grad_grad_sliced_values_monolithic
     //the last few resolutions might be extra resolutions so we just write zero grad there
     blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)(nr_resolutions+nr_resolutions_extra), 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
@@ -287,8 +312,14 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
         grad_grad_sliced_values_monolithic.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
         lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
     );
+    // torch::cuda::synchronize();
+    // auto t4 = std::chrono::high_resolution_clock::now();
+    // std::cout << "double back 2 took "
+    //           << std::chrono::duration_cast<std::chrono::milliseconds>(t4-t3).count()
+    //           << " milliseconds\n";
 
     
+    lattice_values_monolithic_grad=lattice_values_monolithic_grad.permute({0,2,1});
    
 
     return std::make_tuple(lattice_values_monolithic_grad,  grad_grad_sliced_values_monolithic);
