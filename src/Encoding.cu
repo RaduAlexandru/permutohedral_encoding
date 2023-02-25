@@ -193,6 +193,25 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
         input.m_require_positions_grad
     );
 
+
+    if(input.m_require_positions_grad){
+        backward_gpu_only_pos<POS_DIM,NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
+            nr_positions,
+            capacity, 
+            input.m_lattice_values.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
+            input.m_positions_raw.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+            m_fixed_params.m_scale_factor.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+            m_fixed_params.m_random_shift_per_level.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+            input.m_anneal_window.packed_accessor32<float,1,torch::RestrictPtrTraits>(),
+            grad_sliced_values_monolithic.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
+            lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
+            positions_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
+            m_fixed_params.m_concat_points,
+            input.m_require_lattice_values_grad,
+            input.m_require_positions_grad
+        );
+    }
+
     positions_grad=positions_grad.sum(0);
 
     // lattice_values_monolithic_grad=lattice_values_monolithic_grad.permute({0,2,1});
