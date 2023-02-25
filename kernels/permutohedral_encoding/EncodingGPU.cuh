@@ -7,7 +7,7 @@
 
 #define BLOCK_SIZE 128
 #define BLOCK_SIZE_BACK 32
-#define BLOCK_SIZE_DOUBLE_BACK 128
+#define BLOCK_SIZE_DOUBLE_BACK 64
 
 // #define LATTICE_HALF_PRECISION 0
 
@@ -271,7 +271,7 @@ backward_gpu(
     const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> anneal_window,
     const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
     torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad,
-    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions_grad,
+    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> positions_grad,
     const bool concat_points,
     const bool require_lattice_values_grad,
     const bool require_positions_grad
@@ -489,13 +489,17 @@ backward_gpu(
         // if(debug) printf("dL_dPos[0] %f, dL_dPos[1] %f, dL_dPos[2] %f\n", dL_dPos[0], dL_dPos[1], dL_dPos[2]);
         //finish
         // printf("dL_dPos[0] %f \n",dL_dPos[0]);
-        atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
-        atomicAdd(&positions_grad[idx][1], dL_dPos[1]  );
-        atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
+        // atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
+        // atomicAdd(&positions_grad[idx][1], dL_dPos[1]  );
+        // atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
         //Cannot be done like this because the sums into the positions grad may come from multiple levels so they need to be atomic
         // positions_grad[idx][0]=dL_dPos[0];
         // positions_grad[idx][1]=dL_dPos[1];
         // positions_grad[idx][2]=dL_dPos[2];
+
+        positions_grad[level][idx][0]=dL_dPos[0];
+        positions_grad[level][idx][1]=dL_dPos[1];
+        positions_grad[level][idx][2]=dL_dPos[2];
                     
 
     }

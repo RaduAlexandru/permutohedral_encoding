@@ -162,9 +162,9 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
 
     Tensor positions_grad; //dL/dPos
     if (input.m_require_positions_grad){
-        positions_grad=torch::zeros({ nr_positions, pos_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+        positions_grad=torch::empty({ nr_resolutions, nr_positions, pos_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
     }else{
-        positions_grad=torch::empty({ 1,1 },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+        positions_grad=torch::empty({ 1,1,1 },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
     }
 
 
@@ -182,11 +182,13 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
         input.m_anneal_window.packed_accessor32<float,1,torch::RestrictPtrTraits>(),
         grad_sliced_values_monolithic.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
         lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
-        positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+        positions_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
         m_fixed_params.m_concat_points,
         input.m_require_lattice_values_grad,
         input.m_require_positions_grad
     );
+
+    positions_grad=positions_grad.sum(0);
 
 
     return std::make_tuple(lattice_values_monolithic_grad, positions_grad);
