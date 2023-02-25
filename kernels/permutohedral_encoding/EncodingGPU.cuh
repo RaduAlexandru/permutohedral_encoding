@@ -488,10 +488,12 @@ backward_gpu(
         //             dL_delevated[3]* (-3*scale_factor[level][2]);
         //do it in a loop so as to support various pos_dims
         for(int i=0; i<pos_dim; i++){
+            #pragma unroll
             for(int j=0; j<=i; j++){
                 dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
             }
         }
+        #pragma unroll
         for(int i=0; i<pos_dim; i++){
             dL_dPos[i]-=dL_delevated[i+1] * scale_factor[level][i] * (i+1);
         }
@@ -509,6 +511,7 @@ backward_gpu(
         // positions_grad[level][idx][0]=dL_dPos[0];
         // positions_grad[level][idx][1]=dL_dPos[1];
         // positions_grad[level][idx][2]=dL_dPos[2];
+        #pragma unroll
         for(int i=0; i<pos_dim; i++){
             positions_grad[level][idx][i]=dL_dPos[i];
         }
@@ -694,10 +697,12 @@ double_backward_from_positions_gpu(
     // so the gradient from grad_p_cur[i] will go into each elevated <= i. Afterwards we have another loop which passes the gradient from grad_p_cur[i] into elevated[i+1]
     for(int i=0; i<pos_dim; i++){
         float grad=grad_p_cur[i]*scale_factor[level][i];
+        #pragma unroll
         for(int j=0; j<=i; j++){
             dL_delevated[j]+=grad;
         }
     }
+    #pragma unroll
     for(int i=0; i<pos_dim; i++){
         dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
     }
@@ -935,10 +940,12 @@ double_backward_from_positions_gpu_1(
     // so the gradient from grad_p_cur[i] will go into each elevated <= i. Afterwards we have another loop which passes the gradient from grad_p_cur[i] into elevated[i+1]
     for(int i=0; i<pos_dim; i++){
         float grad=grad_p_cur[i]*scale_factor[level][i];
+        #pragma unroll
         for(int j=0; j<=i; j++){
             dL_delevated[j]+=grad;
         }
     }
+    #pragma unroll
     for(int i=0; i<pos_dim; i++){
         dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
     }
@@ -954,6 +961,7 @@ double_backward_from_positions_gpu_1(
     //     dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0 / (pos_dim + 1));
     // }
     //So now we do this
+    #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
         dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0 / (pos_dim + 1));
         dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0 / (pos_dim + 1));
@@ -1164,10 +1172,12 @@ double_backward_from_positions_gpu_2(
     // so the gradient from grad_p_cur[i] will go into each elevated <= i. Afterwards we have another loop which passes the gradient from grad_p_cur[i] into elevated[i+1]
     for(int i=0; i<pos_dim; i++){
         float grad=grad_p_cur[i]*scale_factor[level][i];
+        #pragma unroll
         for(int j=0; j<=i; j++){
             dL_delevated[j]+=grad;
         }
     }
+    #pragma unroll
     for(int i=0; i<pos_dim; i++){
         dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
     }
@@ -1183,6 +1193,7 @@ double_backward_from_positions_gpu_2(
     //     dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0 / (pos_dim + 1));
     // }
     //So now we do this
+    #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
         dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0 / (pos_dim + 1));
         dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0 / (pos_dim + 1));
