@@ -271,7 +271,7 @@ backward_gpu(
     const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> anneal_window,
     const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
     torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad,
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> positions_grad,
+    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions_grad,
     const bool concat_points,
     const bool require_lattice_values_grad,
     const bool require_positions_grad
@@ -537,7 +537,7 @@ backward_gpu_only_pos(
     const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> anneal_window,
     const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> grad_sliced_values_monolithic,
     torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic_grad,
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> positions_grad,
+    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions_grad,
     const bool concat_points,
     const bool require_lattice_values_grad,
     const bool require_positions_grad
@@ -739,6 +739,10 @@ backward_gpu_only_pos(
         // atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
         // atomicAdd(&positions_grad[idx][1], dL_dPos[1]  );
         // atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
+        #pragma unroll
+        for(int i=0; i<pos_dim; i++){
+            atomicAdd(&positions_grad[idx][i], dL_dPos[i]  );
+        }
         //Cannot be done like this because the sums into the positions grad may come from multiple levels so they need to be atomic
         // positions_grad[idx][0]=dL_dPos[0];
         // positions_grad[idx][1]=dL_dPos[1];
@@ -747,10 +751,10 @@ backward_gpu_only_pos(
         // positions_grad[level][idx][0]=dL_dPos[0];
         // positions_grad[level][idx][1]=dL_dPos[1];
         // positions_grad[level][idx][2]=dL_dPos[2];
-        #pragma unroll
-        for(int i=0; i<pos_dim; i++){
-            positions_grad[level][idx][i]=dL_dPos[i];
-        }
+        // #pragma unroll
+        // for(int i=0; i<pos_dim; i++){
+        //     positions_grad[level][idx][i]=dL_dPos[i];
+        // }
 
     }
 
