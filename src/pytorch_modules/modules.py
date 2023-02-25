@@ -28,7 +28,7 @@ class PermutoEncoding(torch.nn.Module):
 
 		#each levels of the hashamp can be randomly shifted so that we minimize collisions
 		if appply_random_shift_per_level:
-			random_shift_per_level=torch.randn( nr_levels, 3)*10
+			random_shift_per_level=torch.randn( nr_levels, pos_dim)*10
 			self.random_shift_per_level=torch.nn.Parameter( random_shift_per_level.cuda() ) #we make it a parameter just so it gets saved when we checkpoint
 		else:
 			self.random_shift_per_level= torch.nn.Parameter( torch.empty((1)).cuda() )

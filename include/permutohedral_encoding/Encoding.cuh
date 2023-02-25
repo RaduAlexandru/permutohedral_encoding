@@ -143,6 +143,7 @@ inline std::shared_ptr<EncodingBase> create_encoding_template_pos_dim(const int 
 inline std::shared_ptr<EncodingBase> create_encoding(const int pos_dim, const int nr_feat_per_level, const EncodingFixedParams& fixed_params){
     switch (pos_dim){
         // case(2): return create_encoding_template_pos_dim<2>(pos_dim, nr_feat_per_level);
+        case(2): return create_encoding_template_pos_dim<2>(pos_dim, nr_feat_per_level, fixed_params);
         case(3): return create_encoding_template_pos_dim<3>(pos_dim, nr_feat_per_level, fixed_params);
         case(4): return create_encoding_template_pos_dim<4>(pos_dim, nr_feat_per_level, fixed_params);
         case(5): return create_encoding_template_pos_dim<5>(pos_dim, nr_feat_per_level, fixed_params);
