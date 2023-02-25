@@ -467,7 +467,7 @@ backward_gpu(
         // if(debug) printf("dL_delevated[0] %f, dL_delevated[1] %f, dL_delevated[2] %f, dL_delevated[3] %f\n", dL_delevated[0], dL_delevated[1], dL_delevated[2], dL_delevated[3]);
 
         //dL/dPos = dL/dE * dE/dPos
-        float dL_dPos[pos_dim];
+        float dL_dPos[pos_dim]{0};
         //I unrolles the loop that computes E from P and I got some local derivatives like 
         //dEx/dPx=Sx  dEx/dPy=Sy
         //dEy/dPx=-Sx  dEy/dPy=Sy  dEy/dPz=Sz
@@ -475,17 +475,26 @@ backward_gpu(
         //dEw/dPz=-3Sz
         //So we just accumulate these values inot dL_dPos
         //x
-        dL_dPos[0]= dL_delevated[0]* scale_factor[level][0] +  
-                    dL_delevated[1]* (-scale_factor[level][0]);
-        //y
-        dL_dPos[1]= dL_delevated[0]* scale_factor[level][1] +  
-                    dL_delevated[1]* scale_factor[level][1] +
-                    dL_delevated[2]* (-2*scale_factor[level][1]);
-        //z
-        dL_dPos[2]= dL_delevated[0]* scale_factor[level][2] + 
-                    dL_delevated[1]* scale_factor[level][2] +
-                    dL_delevated[2]* scale_factor[level][2] +
-                    dL_delevated[3]* (-3*scale_factor[level][2]);
+        // dL_dPos[0]= dL_delevated[0]* scale_factor[level][0] +  
+        //             dL_delevated[1]* (-scale_factor[level][0]);
+        // //y
+        // dL_dPos[1]= dL_delevated[0]* scale_factor[level][1] +  
+        //             dL_delevated[1]* scale_factor[level][1] +
+        //             dL_delevated[2]* (-2*scale_factor[level][1]);
+        // //z
+        // dL_dPos[2]= dL_delevated[0]* scale_factor[level][2] + 
+        //             dL_delevated[1]* scale_factor[level][2] +
+        //             dL_delevated[2]* scale_factor[level][2] +
+        //             dL_delevated[3]* (-3*scale_factor[level][2]);
+        //do it in a loop so as to support various pos_dims
+        for(int i=0; i<pos_dim; i++){
+            for(int j=0; j<=i; j++){
+                dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
+            }
+        }
+        for(int i=0; i<pos_dim; i++){
+            dL_dPos[i]-=dL_delevated[i+1] * scale_factor[level][i] * (i+1);
+        }
         // if(debug) printf("dL_dPos[0] %f, dL_dPos[1] %f, dL_dPos[2] %f\n", dL_dPos[0], dL_dPos[1], dL_dPos[2]);
         //finish
         // printf("dL_dPos[0] %f \n",dL_dPos[0]);
@@ -497,10 +506,12 @@ backward_gpu(
         // positions_grad[idx][1]=dL_dPos[1];
         // positions_grad[idx][2]=dL_dPos[2];
 
-        positions_grad[level][idx][0]=dL_dPos[0];
-        positions_grad[level][idx][1]=dL_dPos[1];
-        positions_grad[level][idx][2]=dL_dPos[2];
-                    
+        // positions_grad[level][idx][0]=dL_dPos[0];
+        // positions_grad[level][idx][1]=dL_dPos[1];
+        // positions_grad[level][idx][2]=dL_dPos[2];
+        for(int i=0; i<pos_dim; i++){
+            positions_grad[level][idx][i]=dL_dPos[i];
+        }
 
     }
 
@@ -518,6 +529,7 @@ __launch_bounds__(BLOCK_SIZE_DOUBLE_BACK) //since the block size is known at com
 double_backward_from_positions_gpu(
     const int nr_positions,
     const int lattice_capacity,
+    const int nr_resolutions,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> double_positions_grad,
     const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
@@ -540,6 +552,13 @@ double_backward_from_positions_gpu(
     }
 
     const uint32_t level = blockIdx.y; // <- the level is the same for all threads
+
+    if(level>=nr_resolutions){
+        //we are in one of the extra resolutions so we just write zero in the grad sliced grad
+        grad_grad_sliced_values_monolithic[level][0][idx]=0;
+        grad_grad_sliced_values_monolithic[level][1][idx]=0;
+        return;
+    }
 
 
 
@@ -712,8 +731,10 @@ double_backward_from_positions_gpu(
         grad_grad_sliced_val_cur[1]+=dL_dbarycentric[remainder]* w_lvl * val_lattice_vertex.y;
     }
     //finish the accumulation of grad_grad_sliced
-    atomicAdd(&grad_grad_sliced_values_monolithic[level][0][idx], grad_grad_sliced_val_cur[0]  );
-    atomicAdd(&grad_grad_sliced_values_monolithic[level][1][idx], grad_grad_sliced_val_cur[1]  );
+    // atomicAdd(&grad_grad_sliced_values_monolithic[level][0][idx], grad_grad_sliced_val_cur[0]  );
+    // atomicAdd(&grad_grad_sliced_values_monolithic[level][1][idx], grad_grad_sliced_val_cur[1]  );
+    grad_grad_sliced_values_monolithic[level][0][idx]=grad_grad_sliced_val_cur[0];
+    grad_grad_sliced_values_monolithic[level][1][idx]=grad_grad_sliced_val_cur[1];
 
 }
 
@@ -726,6 +747,7 @@ __launch_bounds__(BLOCK_SIZE_DOUBLE_BACK) //since the block size is known at com
 double_backward_from_positions_gpu_1(
     const int nr_positions,
     const int lattice_capacity,
+    const int nr_resolutions,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> double_positions_grad,
     const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
@@ -748,6 +770,13 @@ double_backward_from_positions_gpu_1(
     }
 
     const uint32_t level = blockIdx.y; // <- the level is the same for all threads
+
+    if(level>=nr_resolutions){
+        //we are in one of the extra resolutions so we just write zero in the grad sliced grad
+        // grad_grad_sliced_values_monolithic[level][0][idx]=0;
+        // grad_grad_sliced_values_monolithic[level][1][idx]=0;
+        // return;
+    }
 
 
 
@@ -932,6 +961,7 @@ __launch_bounds__(BLOCK_SIZE_DOUBLE_BACK) //since the block size is known at com
 double_backward_from_positions_gpu_2(
     const int nr_positions,
     const int lattice_capacity,
+    const int nr_resolutions,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> double_positions_grad,
     const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> lattice_values_monolithic,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> positions,
@@ -954,6 +984,13 @@ double_backward_from_positions_gpu_2(
     }
 
     const uint32_t level = blockIdx.y; // <- the level is the same for all threads
+
+    if(level>=nr_resolutions){
+        //we are in one of the extra resolutions so we just write zero in the grad sliced grad
+        grad_grad_sliced_values_monolithic[level][0][idx]=0;
+        grad_grad_sliced_values_monolithic[level][1][idx]=0;
+        return;
+    }
 
 
 
@@ -1120,8 +1157,10 @@ double_backward_from_positions_gpu_2(
         grad_grad_sliced_val_cur[1]+=dL_dbarycentric[remainder]* w_lvl * val_lattice_vertex.y;
     }
     //finish the accumulation of grad_grad_sliced
-    atomicAdd(&grad_grad_sliced_values_monolithic[level][0][idx], grad_grad_sliced_val_cur[0]  );
-    atomicAdd(&grad_grad_sliced_values_monolithic[level][1][idx], grad_grad_sliced_val_cur[1]  );
+    // atomicAdd(&grad_grad_sliced_values_monolithic[level][0][idx], grad_grad_sliced_val_cur[0]  );
+    // atomicAdd(&grad_grad_sliced_values_monolithic[level][1][idx], grad_grad_sliced_val_cur[1]  );
+    grad_grad_sliced_values_monolithic[level][0][idx]=grad_grad_sliced_val_cur[0];
+    grad_grad_sliced_values_monolithic[level][1][idx]=grad_grad_sliced_val_cur[1];
 
 }
 

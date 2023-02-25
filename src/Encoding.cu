@@ -225,18 +225,17 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     //dL/dLattiveValues
     Tensor lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, capacity, val_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
 
-    Tensor grad_grad_sliced_values_monolithic = torch::zeros({ nr_resolutions+nr_resolutions_extra, val_dim, nr_positions },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+    Tensor grad_grad_sliced_values_monolithic = torch::empty({ nr_resolutions+nr_resolutions_extra, val_dim, nr_positions },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
     
 
     
 
 
-    const dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
-
-   
+    // const dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)(nr_resolutions+nr_resolutions_extra), 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
     // double_backward_from_positions_gpu<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
     //     nr_positions,
     //     capacity, 
+    //     nr_resolutions, 
     //     double_positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
     //     input.m_lattice_values.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
     //     input.m_positions_raw.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
@@ -250,10 +249,12 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     //     lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
     // );
 
-
+    //writes gradient to lattice_values_monolithic_grad
+    dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
     double_backward_from_positions_gpu_1<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
         nr_positions,
-        capacity, 
+        capacity,
+        nr_resolutions, 
         double_positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
         input.m_lattice_values.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
         input.m_positions_raw.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
@@ -267,9 +268,13 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
         lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
     );
 
+    //writes gradient to grad_grad_sliced_values_monolithic
+    //the last few resolutions might be extra resolutions so we just write zero grad there
+    blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)(nr_resolutions+nr_resolutions_extra), 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
     double_backward_from_positions_gpu_2<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
         nr_positions,
         capacity, 
+        nr_resolutions,
         double_positions_grad.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
         input.m_lattice_values.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
         input.m_positions_raw.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
