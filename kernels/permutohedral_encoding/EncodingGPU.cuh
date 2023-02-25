@@ -6,10 +6,10 @@
 
 
 #define BLOCK_SIZE 128
-#define BLOCK_SIZE_BACK 64
+#define BLOCK_SIZE_BACK 32
 #define BLOCK_SIZE_DOUBLE_BACK 128
 
-#define LATTICE_HALF_PRECISION 0
+// #define LATTICE_HALF_PRECISION 0
 
 
 
@@ -289,19 +289,10 @@ backward_gpu(
 
 
 
-    //get the value at the position
-    float grad_sliced_val_cur[val_dim];
-    #if LATTICE_HALF_PRECISION 
-        #pragma unroll
-        for (int j = 0; j < val_dim; j++) {
-            grad_sliced_val_cur[j]=__half2float(grad_sliced_values_monolithic[level][j][idx]);
-        }
-    #else 
-        #pragma unroll
-        for (int j = 0; j < val_dim; j++) {
-            grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
-        }
-    #endif
+    //default
+    float2 grad_sliced_val_cur;
+    grad_sliced_val_cur.x=grad_sliced_values_monolithic[level][0][idx];
+    grad_sliced_val_cur.y=grad_sliced_values_monolithic[level][1][idx];
 
 
 
@@ -408,11 +399,13 @@ backward_gpu(
 
            
             //if the vertex exists accumulate its value weighted by the barycentric weight (accumulates also the homogeneous coordinate)
-            #pragma unroll
-            for (int j = 0; j < val_dim ; j++){
-                float weighted_grad=grad_sliced_val_cur[j]*w;
-                atomicAdd(&lattice_values_monolithic_grad[level][idx_val][j], weighted_grad  );
-            }
+            // #pragma unroll
+            // for (int j = 0; j < val_dim ; j++){
+                // float weighted_grad=grad_sliced_val_cur[j]*w;
+                // atomicAdd(&lattice_values_monolithic_grad[level][idx_val][j], weighted_grad  );
+            // }
+            atomicAdd(&lattice_values_monolithic_grad[level][idx_val][0], grad_sliced_val_cur.x*w  );
+            atomicAdd(&lattice_values_monolithic_grad[level][idx_val][1], grad_sliced_val_cur.y*w  );
 
         
         }
@@ -450,8 +443,8 @@ backward_gpu(
             const float* fv=&lattice_values_monolithic[level][idx_val][0];
             const float2 val_lattice_vertex=reinterpret_cast<const float2*>( fv )[0];
             //add to the dL_d_barycentric
-            dL_dbarycentric[remainder]+=val_lattice_vertex.x*w_lvl   * grad_sliced_val_cur[0];
-            dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur[1];
+            dL_dbarycentric[remainder]+=val_lattice_vertex.x*w_lvl   * grad_sliced_val_cur.x;
+            dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur.y;
 
         }
         // if(debug) printf("grad sliced is %f, %f\n", grad_sliced_val_cur[0], grad_sliced_val_cur[1]);
@@ -631,17 +624,10 @@ double_backward_from_positions_gpu(
 
     //get the value at the position
     float grad_sliced_val_cur[val_dim];
-    #if LATTICE_HALF_PRECISION 
-        #pragma unroll
-        for (int j = 0; j < val_dim; j++) {
-            grad_sliced_val_cur[j]=__half2float(grad_sliced_values_monolithic[level][j][idx]);
-        }
-    #else 
-        #pragma unroll
-        for (int j = 0; j < val_dim; j++) {
-            grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
-        }
-    #endif
+    #pragma unroll
+    for (int j = 0; j < val_dim; j++) {
+        grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
+    }
 
     //get eh gradient at the curent position
     float grad_p_cur[pos_dim];
@@ -846,17 +832,10 @@ double_backward_from_positions_gpu_1(
 
     //get the value at the position
     float grad_sliced_val_cur[val_dim];
-    #if LATTICE_HALF_PRECISION 
-        #pragma unroll
-        for (int j = 0; j < val_dim; j++) {
-            grad_sliced_val_cur[j]=__half2float(grad_sliced_values_monolithic[level][j][idx]);
-        }
-    #else 
-        #pragma unroll
-        for (int j = 0; j < val_dim; j++) {
-            grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
-        }
-    #endif
+    #pragma unroll
+    for (int j = 0; j < val_dim; j++) {
+        grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
+    }
 
     // //get eh gradient at the curent position
     float grad_p_cur[pos_dim];
@@ -1057,19 +1036,6 @@ double_backward_from_positions_gpu_2(
 
     float w_lvl= anneal_window[level];
 
-    //get the value at the position
-    // float grad_sliced_val_cur[val_dim];
-    // #if LATTICE_HALF_PRECISION 
-    //     #pragma unroll
-    //     for (int j = 0; j < val_dim; j++) {
-    //         grad_sliced_val_cur[j]=__half2float(grad_sliced_values_monolithic[level][j][idx]);
-    //     }
-    // #else 
-    //     #pragma unroll
-    //     for (int j = 0; j < val_dim; j++) {
-    //         grad_sliced_val_cur[j]=grad_sliced_values_monolithic[level][j][idx];
-    //     }
-    // #endif
 
     //get eh gradient at the curent position
     float grad_p_cur[pos_dim];
