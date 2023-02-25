@@ -249,7 +249,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     //     lattice_values_monolithic_grad.packed_accessor32<float,3,torch::RestrictPtrTraits>()
     // );
 
-    //writes gradient to lattice_values_monolithic_grad
+    // writes gradient to lattice_values_monolithic_grad
     dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
     double_backward_from_positions_gpu_1<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
         nr_positions,
