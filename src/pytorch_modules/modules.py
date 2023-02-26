@@ -44,12 +44,24 @@ class PermutoEncoding(torch.nn.Module):
 
 
 		#make the lattice wrapper
-		fixed_params=_C.EncodingFixedParams(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, self.random_shift_per_level, self.concat_points, self.concat_points_scaling)
-		self.lattice=_C.EncodingWrapper.create(self.pos_dim, self.nr_feat_per_level, fixed_params)
+		self.fixed_params=_C.EncodingFixedParams(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, self.random_shift_per_level, self.concat_points, self.concat_points_scaling)
+		self.lattice=_C.EncodingWrapper.create(self.pos_dim, self.nr_feat_per_level, self.fixed_params)
+
+
+		#the first time we run the module we set some constant on the gpu. this a somewhat costly oepration because it requires a sync to cpu. so we do it only once
+		self.lattice.copy_to_constant_mem(self.fixed_params)
 		
 	def forward(self, positions, anneal_window=None):
 
 		nr_positions=positions.shape[0]
+
+
+		# positions=positions.transpose(0,1).contiguous().transpose(0,1)
+
+
+
+
+
 
 		# check for posdim
 		assert positions.shape[1] == self.pos_dim,"Pos dim for the lattice doesn't correspond with the position of the points."

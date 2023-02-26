@@ -82,6 +82,9 @@ public:
     virtual torch::Tensor forward(const EncodingInput& input) =0;
     virtual std::tuple<torch::Tensor, torch::Tensor> backward(const EncodingInput& input, torch::Tensor& grad_sliced_values_monolithic) =0;
     virtual std::tuple<torch::Tensor, torch::Tensor> double_backward_from_positions(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic) =0;
+
+    //new things
+    virtual void copy_to_constant_mem(const EncodingFixedParams& fixed_params) =0;
         
 };
 
@@ -110,9 +113,11 @@ public:
     std::tuple<torch::Tensor, torch::Tensor> backward(const EncodingInput& input, torch::Tensor& grad_sliced_values_monolithic) override;
 
     //double backward
-    std::tuple<torch::Tensor, torch::Tensor> double_backward_from_positions(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic);
+    std::tuple<torch::Tensor, torch::Tensor> double_backward_from_positions(const EncodingInput& input, const torch::Tensor& double_positions_grad, torch::Tensor& grad_sliced_values_monolithic) override;
     
 
+    //new things
+    void copy_to_constant_mem(const EncodingFixedParams& fixed_params) override;
    
 
 private:
@@ -175,7 +180,10 @@ public:
         return m_encoding->double_backward_from_positions(input, double_positions_grad, grad_sliced_values_monolithic);
     }   
 
-    
+    //new things
+    void copy_to_constant_mem(const EncodingFixedParams& fixed_params){
+        m_encoding->copy_to_constant_mem(fixed_params);
+    }
 
 
 private:

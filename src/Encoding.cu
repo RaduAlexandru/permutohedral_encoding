@@ -347,8 +347,19 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
 
 }
 
+template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
+void Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::copy_to_constant_mem(const EncodingFixedParams& fixed_params){
 
+    CHECK(fixed_params.m_random_shift_per_level.numel()<256) << "We reserved a maximum of 256 for the constant memory and we exceding that";
+    CHECK(fixed_params.m_scale_factor.numel()<256) << "We reserved a maximum of 256 for the constant memory and we exceding that";
 
+    //the onyl way to populate the constant memory is with cudaMemcpyToSymbol whcih copies from cpu to gpu
+    Tensor random_shift_cpu=fixed_params.m_random_shift_per_level.view({-1}).cpu();
+    Tensor scale_factor_cpu=fixed_params.m_scale_factor.view({-1}).cpu();
+
+    cudaMemcpyToSymbol(random_shift_constant, random_shift_cpu.data_ptr(), sizeof(float) * random_shift_cpu.numel());
+    cudaMemcpyToSymbol(scale_factor_constant, scale_factor_cpu.data_ptr(), sizeof(float) * scale_factor_cpu.numel());
+}
 
 
 

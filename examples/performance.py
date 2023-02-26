@@ -9,7 +9,7 @@ import time as time_module
 torch.manual_seed(0)
 
 #create encoding
-pos_dim=3
+pos_dim=4
 capacity=pow(2,18) 
 nr_levels=24 
 nr_feat_per_level=2 
@@ -25,27 +25,53 @@ points=torch.rand(nr_points, pos_dim).cuda()
 
 iters_warmup=10
 iters_to_measure=300
+
+#INFERENCE
 iters_valid=0
 mean_time=0
 min_time=99999999
-for iter_nr in range(iters_to_measure):
+with torch.set_grad_enabled(False):
+    for iter_nr in range(iters_to_measure):
+        #encode
+        torch.cuda.synchronize()
+        start = time_module.perf_counter()
+        features=encoding(points)
+        torch.cuda.synchronize()
+        elapsed_s=time_module.perf_counter() - start
+        # print("elapsed_s",elapsed_s)
+
+        if iter_nr>iters_warmup:
+            elapsed_ms=elapsed_s*1000
+            mean_time+=elapsed_ms
+            min_time=min(min_time, elapsed_ms)
+            iters_valid+=1
+print("inference")
+print("avg ms", mean_time/iters_valid)
+print("min time", min_time)
 
 
-    #encode
-    torch.cuda.synchronize()
-    start = time_module.perf_counter()
-    features=encoding(points)
-    torch.cuda.synchronize()
-    elapsed_s=time_module.perf_counter() - start
+#TRAIN
+iters_valid=0
+mean_time=0
+min_time=99999999
+with torch.set_grad_enabled(True):
+    for iter_nr in range(iters_to_measure):
+        #encode
+        torch.cuda.synchronize()
+        start = time_module.perf_counter()
+        features=encoding(points)
+        loss=(features.mean()-10).abs()
+        loss.backward()
+        torch.cuda.synchronize()
+        elapsed_s=time_module.perf_counter() - start
+        # print("elapsed_s",elapsed_s)
 
-    if iter_nr>iters_warmup:
-        # throughput = nr_points / elapsed_s
-        # mean_training_throughput+=throughput
-        # training_nr_iterations_executed+=1
-        elapsed_ms=elapsed_s*1000
-        mean_time+=elapsed_ms
-        min_time=min(min_time, elapsed_ms)
-        iters_valid+=1
+        if iter_nr>iters_warmup:
+            elapsed_ms=elapsed_s*1000
+            mean_time+=elapsed_ms
+            min_time=min(min_time, elapsed_ms)
+            iters_valid+=1
+print("train")
 print("avg ms", mean_time/iters_valid)
 print("min time", min_time)
 
