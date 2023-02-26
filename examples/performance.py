@@ -6,6 +6,8 @@ import numpy as np
 import math
 import time as time_module
 
+torch.manual_seed(0)
+
 #create encoding
 pos_dim=3
 capacity=pow(2,18) 
