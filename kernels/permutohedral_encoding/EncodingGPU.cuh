@@ -95,6 +95,12 @@ forward_gpu(
     // const uint32_t level = 1; // <- the level is the same for all threads
 
 
+    float pos[pos_dim];
+    for (int i = 0; i < pos_dim; i++) {
+        pos[i]=positions[idx][i];
+    }
+
+
     //if we are in one of the extra resolutions and we are also concating the points, then do so
     int idx_extra_level=level-nr_resolutions;
     if (idx_extra_level>=0){ //we are in one of the extra levels
@@ -107,7 +113,8 @@ forward_gpu(
             int position_dimension_to_copy_from=i+idx_extra_level*val_dim; //for the first resolution this is 0 and 1 , for the other resolution it will be 2 and 3.
             if(position_dimension_to_copy_from<pos_dim){
                 // printf("copying from dimensions %d\n", position_dimension_to_copy_from);
-                sliced_values_monolithic[level][i][idx]=positions[idx][position_dimension_to_copy_from] * points_scaling;
+                // sliced_values_monolithic[level][i][idx]=positions[idx][position_dimension_to_copy_from] * points_scaling;
+                sliced_values_monolithic[level][i][idx]=pos[position_dimension_to_copy_from] * points_scaling;
             }else{ //we are in the 4 dimensions but we have only posdim=3 so we just put a zero here
                 sliced_values_monolithic[level][i][idx]=0.0f;
                 // printf("putting 0 at dimension %d\n", i);
@@ -131,7 +138,8 @@ forward_gpu(
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
         // float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
-        float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -303,14 +311,23 @@ backward_gpu(
 
 
 
+
+
+
+    float pos[pos_dim];
+    for (int i = 0; i < pos_dim; i++) {
+        pos[i]=positions[idx][i];
+    }
+
+
+
     float elevated[pos_dim + 1];
-
-
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
         // float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
-        float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -571,18 +588,21 @@ backward_gpu_only_pos(
 
 
 
+    float pos[pos_dim];
+    for (int i = 0; i < pos_dim; i++) {
+        pos[i]=positions[idx][i];
+    }
+
 
 
 
 
     float elevated[pos_dim + 1];
-
-
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
         // float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
-        float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -816,15 +836,19 @@ double_backward_from_positions_gpu(
     }
 
 
+    float pos[pos_dim];
+    for (int i = 0; i < pos_dim; i++) {
+        pos[i]=positions[idx][i];
+    }
+
+
 
     float elevated[pos_dim + 1];
-
-
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
         // float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
-        float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
         // float cf = positions[idx][i-1] * scalings_constants[(i - 1)  + level*3];
         // float cf = positions[idx][i-1] * scalings[(i - 1)  + level*3];
         // float cf = positions[i-1][idx] * scale_factor[level][i - 1];
@@ -1063,15 +1087,20 @@ double_backward_from_positions_gpu_1(
     }
 
 
+    float pos[pos_dim];
+    for (int i = 0; i < pos_dim; i++) {
+        pos[i]=positions[idx][i];
+    }
+
+
 
     float elevated[pos_dim + 1];
-
-
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
         // float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
-        float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
         // float cf = positions[idx][i-1] * scalings_constants[(i - 1)  + level*3];
         // float cf = positions[idx][i-1] * scalings[(i - 1)  + level*3];
         // float cf = positions[i-1][idx] * scale_factor[level][i - 1];
@@ -1306,16 +1335,20 @@ double_backward_from_positions_gpu_2(
         return;
     }
 
+    float pos[pos_dim];
+    for (int i = 0; i < pos_dim; i++) {
+        pos[i]=positions[idx][i];
+    }
+
 
 
     float elevated[pos_dim + 1];
-
-
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
         // float cf = (positions[idx][i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i - 1];
-        float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (positions[idx][i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
         // float cf = positions[idx][i-1] * scalings_constants[(i - 1)  + level*3];
         // float cf = positions[idx][i-1] * scalings[(i - 1)  + level*3];
         // float cf = positions[i-1][idx] * scale_factor[level][i - 1];
