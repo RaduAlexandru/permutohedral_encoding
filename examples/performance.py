@@ -101,9 +101,11 @@ nr_points=int(math.pow(2,19))
 points=torch.rand(nr_points, pos_dim).cuda()
 
 iters_warmup=10
-iters_to_measure=300
+iters_to_measure=30
+# iters_warmup=1
+# iters_to_measure=3
 
 inference()
 backward_towards_lattice()
-backward_towards_lattice_and_pos()
+# backward_towards_lattice_and_pos()
 

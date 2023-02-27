@@ -67,7 +67,7 @@ class PermutoEncoding(torch.nn.Module):
 
 
 
-		# positions=positions.transpose(0,1).contiguous().transpose(0,1)
+		positions=positions.transpose(0,1).contiguous().transpose(0,1)
 
 
 

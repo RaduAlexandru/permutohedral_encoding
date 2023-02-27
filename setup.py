@@ -95,6 +95,7 @@ min_compute_capability = min(compute_capabilities)
 
 base_nvcc_flags = [
 	"-std=c++14",
+	"--generate-line-info",
 	"--extended-lambda",
 	"--expt-relaxed-constexpr",
 	# The following definitions must be undefined
