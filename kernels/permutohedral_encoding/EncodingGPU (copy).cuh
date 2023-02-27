@@ -187,7 +187,7 @@ forward_gpu(
 
 
 
-    float barycentric[pos_dim + 2]{0.0f};
+    float barycentric[pos_dim + 2]{0};
     // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
@@ -250,8 +250,12 @@ forward_gpu(
 
    
 
-    sliced_values_monolithic[level][0][idx]=val_hom_vec.x;
-    sliced_values_monolithic[level][1][idx]=val_hom_vec.y;
+    // sliced_values_monolithic[level][0][idx]=val_hom_vec.x;
+    // sliced_values_monolithic[level][1][idx]=val_hom_vec.y;
+
+    sliced_values_monolithic[level][idx][0]=val_hom_vec.x;
+    sliced_values_monolithic[level][idx][1]=val_hom_vec.y;
+    //vectorized store
 
     // val x res x nr_positions
     // sliced_values_monolithic[0][level][idx]=val_hom_vec.x;
@@ -328,7 +332,7 @@ backward_gpu(
     int sum = 0;
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float v = elevated[i] * (1.0f / (pos_dim + 1));
+        float v = elevated[i] * (1.0 / (pos_dim + 1));
         float up = ceil(v) * (pos_dim + 1);
         float down = floor(v) * (pos_dim + 1);
         if (up - elevated[i] < elevated[i] - down) {
@@ -367,16 +371,16 @@ backward_gpu(
 
 
 
-    float barycentric[pos_dim + 2]{0.0f};
+    float barycentric[pos_dim + 2]{0};
     // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float delta = (elevated[i] - rem0[i]) * (1.0f / (pos_dim + 1));
+        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
         barycentric[pos_dim - rank[i]] += delta;
         barycentric[pos_dim + 1 - rank[i]] -= delta;
     }
     // Wrap around
-    barycentric[0] += 1.0f + barycentric[pos_dim + 1];
+    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
 
 
     float w_lvl= anneal_window[level];
@@ -429,7 +433,7 @@ backward_gpu(
         //dL/dB  = dL/dS *dS/dB 
         //foward pass is just S=B0*WLvl*V0 + B1*WLvl*V1 etc
         //so dS/dB0 is just W*V0
-        float dL_dbarycentric[pos_dim + 2]{0.0f};
+        float dL_dbarycentric[pos_dim + 2]{0};
         for (int remainder = 0; remainder <= pos_dim; remainder++) {
             //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
             // Compute the location of the lattice point explicitly (all but
@@ -462,16 +466,16 @@ backward_gpu(
         dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
         // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
         //Now we need to accumulate gradient into elevated from from each barycentric that the particlar elevated affected
-        float dL_delevated[pos_dim + 1]{0.0f};
+        float dL_delevated[pos_dim + 1]{0};
         #pragma unroll
         for (int i = 0; i <= pos_dim; i++) {
-            dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0f / (pos_dim + 1));
-            dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0f / (pos_dim + 1));
+            dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0 / (pos_dim + 1));
+            dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0 / (pos_dim + 1));
         }
         // if(debug) printf("dL_delevated[0] %f, dL_delevated[1] %f, dL_delevated[2] %f, dL_delevated[3] %f\n", dL_delevated[0], dL_delevated[1], dL_delevated[2], dL_delevated[3]);
 
         //dL/dPos = dL/dE * dE/dPos
-        float dL_dPos[pos_dim]{0.0f};
+        float dL_dPos[pos_dim]{0};
         //I unrolles the loop that computes E from P and I got some local derivatives like 
         //dEx/dPx=Sx  dEx/dPy=Sy
         //dEy/dPx=-Sx  dEy/dPy=Sy  dEy/dPz=Sz
@@ -494,14 +498,13 @@ backward_gpu(
         for(int i=0; i<pos_dim; i++){
             #pragma unroll
             for(int j=0; j<=i; j++){
-                // dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
-                dL_dPos[i]+=dL_delevated[j]*scale_factor_constant[level*pos_dim + i];
+                dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
             }
         }
         #pragma unroll
         for(int i=0; i<pos_dim; i++){
-            dL_dPos[i]-=dL_delevated[i+1] * scale_factor_constant[level*pos_dim + i] * (i+1);
-        } 
+            dL_dPos[i]-=dL_delevated[i+1] * scale_factor[level][i] * (i+1);
+        }
         // if(debug) printf("dL_dPos[0] %f, dL_dPos[1] %f, dL_dPos[2] %f\n", dL_dPos[0], dL_dPos[1], dL_dPos[2]);
         //finish
         // printf("dL_dPos[0] %f \n",dL_dPos[0]);
@@ -600,7 +603,7 @@ backward_gpu_only_pos(
     int sum = 0;
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float v = elevated[i] * (1.0f / (pos_dim + 1));
+        float v = elevated[i] * (1.0 / (pos_dim + 1));
         float up = ceil(v) * (pos_dim + 1);
         float down = floor(v) * (pos_dim + 1);
         if (up - elevated[i] < elevated[i] - down) {
@@ -639,16 +642,16 @@ backward_gpu_only_pos(
 
 
 
-    // float barycentric[pos_dim + 2]{0.0f};
+    // float barycentric[pos_dim + 2]{0};
     // // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
     // #pragma unroll
     // for (int i = 0; i <= pos_dim; i++) {
-    //     float delta = (elevated[i] - rem0[i]) * (1.0f / (pos_dim + 1));
+    //     float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
     //     barycentric[pos_dim - rank[i]] += delta;
     //     barycentric[pos_dim + 1 - rank[i]] -= delta;
     // }
     // // Wrap around
-    // barycentric[0] += 1.0f + barycentric[pos_dim + 1];
+    // barycentric[0] += 1.0 + barycentric[pos_dim + 1];
 
 
     float w_lvl= anneal_window[level];
@@ -671,7 +674,7 @@ backward_gpu_only_pos(
         //dL/dB  = dL/dS *dS/dB 
         //foward pass is just S=B0*WLvl*V0 + B1*WLvl*V1 etc
         //so dS/dB0 is just W*V0
-        float dL_dbarycentric[pos_dim + 2]{0.0f};
+        float dL_dbarycentric[pos_dim + 2]{0};
         for (int remainder = 0; remainder <= pos_dim; remainder++) {
             //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
             // Compute the location of the lattice point explicitly (all but
@@ -704,16 +707,16 @@ backward_gpu_only_pos(
         dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
         // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
         //Now we need to accumulate gradient into elevated from from each barycentric that the particlar elevated affected
-        float dL_delevated[pos_dim + 1]{0.0f};
+        float dL_delevated[pos_dim + 1]{0};
         #pragma unroll
         for (int i = 0; i <= pos_dim; i++) {
-            dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0f / (pos_dim + 1));
-            dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0f / (pos_dim + 1));
+            dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0 / (pos_dim + 1));
+            dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0 / (pos_dim + 1));
         }
         // if(debug) printf("dL_delevated[0] %f, dL_delevated[1] %f, dL_delevated[2] %f, dL_delevated[3] %f\n", dL_delevated[0], dL_delevated[1], dL_delevated[2], dL_delevated[3]);
 
         //dL/dPos = dL/dE * dE/dPos
-        float dL_dPos[pos_dim]{0.0f};
+        float dL_dPos[pos_dim]{0};
         //I unrolles the loop that computes E from P and I got some local derivatives like 
         //dEx/dPx=Sx  dEx/dPy=Sy
         //dEy/dPx=-Sx  dEy/dPy=Sy  dEy/dPz=Sz
@@ -845,7 +848,7 @@ double_backward_from_positions_gpu(
     int sum = 0;
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float v = elevated[i] * (1.0f / (pos_dim + 1));
+        float v = elevated[i] * (1.0 / (pos_dim + 1));
         float up = ceil(v) * (pos_dim + 1);
         float down = floor(v) * (pos_dim + 1);
         if (up - elevated[i] < elevated[i] - down) {
@@ -884,16 +887,16 @@ double_backward_from_positions_gpu(
 
 
 
-    float barycentric[pos_dim + 2]{0.0f};
+    float barycentric[pos_dim + 2]{0};
     // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float delta = (elevated[i] - rem0[i]) * (1.0f / (pos_dim + 1));
+        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
         barycentric[pos_dim - rank[i]] += delta;
         barycentric[pos_dim + 1 - rank[i]] -= delta;
     }
     // Wrap around
-    barycentric[0] += 1.0f + barycentric[pos_dim + 1];
+    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
 
 
 
@@ -926,7 +929,7 @@ double_backward_from_positions_gpu(
     // dL/dV = dL/dP * dP/dE * dE/dB * dB/dV
     //STARTING
     // dP/dE 
-    float dL_delevated[pos_dim + 1]{0.0f};
+    float dL_delevated[pos_dim + 1]{0};
     //-------hardocded for 3 positions----------
     // dL_delevated[0] =   grad_p_cur[0] * scale_factor[level][0] + 
     //                     grad_p_cur[1] * scale_factor[level][1] +
@@ -963,7 +966,7 @@ double_backward_from_positions_gpu(
 
 
     // dE/dB
-    float dL_dbarycentric[pos_dim + 2]{0.0f};
+    float dL_dbarycentric[pos_dim + 2]{0};
     //in the forward pass we did:
     // dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
     // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
@@ -975,13 +978,13 @@ double_backward_from_positions_gpu(
     // }
     //So now we do this
     for (int i = 0; i <= pos_dim; i++) {
-        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0f / (pos_dim + 1));
-        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0f / (pos_dim + 1));
+        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0 / (pos_dim + 1));
+        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0 / (pos_dim + 1));
     }
     // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
     dL_dbarycentric[0] += dL_dbarycentric[pos_dim + 1];
     //push gradient into values_lattice and grad_sliced
-    float grad_grad_sliced_val_cur[val_dim]{0.0f};
+    float grad_grad_sliced_val_cur[val_dim]{0};
     for (int remainder = 0; remainder <= pos_dim; remainder++) {
         //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
         // Compute the location of the lattice point explicitly (all but
@@ -1092,7 +1095,7 @@ double_backward_from_positions_gpu_1(
     int sum = 0;
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float v = elevated[i] * (1.0f / (pos_dim + 1));
+        float v = elevated[i] * (1.0 / (pos_dim + 1));
         float up = ceil(v) * (pos_dim + 1);
         float down = floor(v) * (pos_dim + 1);
         if (up - elevated[i] < elevated[i] - down) {
@@ -1131,16 +1134,16 @@ double_backward_from_positions_gpu_1(
 
 
 
-    float barycentric[pos_dim + 2]{0.0f};
+    float barycentric[pos_dim + 2]{0};
     // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float delta = (elevated[i] - rem0[i]) * (1.0f / (pos_dim + 1));
+        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
         barycentric[pos_dim - rank[i]] += delta;
         barycentric[pos_dim + 1 - rank[i]] -= delta;
     }
     // Wrap around
-    barycentric[0] += 1.0f + barycentric[pos_dim + 1];
+    barycentric[0] += 1.0 + barycentric[pos_dim + 1];
 
 
 
@@ -1173,7 +1176,7 @@ double_backward_from_positions_gpu_1(
     // dL/dV = dL/dP * dP/dE * dE/dB * dB/dV
     //STARTING
     // dP/dE 
-    float dL_delevated[pos_dim + 1]{0.0f};
+    float dL_delevated[pos_dim + 1]{0};
     //-------hardocded for 3 positions----------
     // dL_delevated[0] =   grad_p_cur[0] * scale_factor[level][0] + 
     //                     grad_p_cur[1] * scale_factor[level][1] +
@@ -1209,7 +1212,7 @@ double_backward_from_positions_gpu_1(
         dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
     }
     // dE/dB
-    float dL_dbarycentric[pos_dim + 2]{0.0f};
+    float dL_dbarycentric[pos_dim + 2]{0};
     //in the forward pass we did:
     // dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
     // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
@@ -1222,8 +1225,8 @@ double_backward_from_positions_gpu_1(
     //So now we do this
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0f / (pos_dim + 1));
-        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0f / (pos_dim + 1));
+        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0 / (pos_dim + 1));
+        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0 / (pos_dim + 1));
     }
     // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
     dL_dbarycentric[0] += dL_dbarycentric[pos_dim + 1];
@@ -1375,11 +1378,11 @@ double_backward_from_positions_gpu_2(
 
 
 
-    float barycentric[pos_dim + 2]{0.0f};
+    float barycentric[pos_dim + 2]{0};
     // Compute the barycentric coordinates (p.10 in [Adams etal 2010])
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        float delta = (elevated[i] - rem0[i]) * (1.0f / (pos_dim + 1));
+        float delta = (elevated[i] - rem0[i]) * (1.0 / (pos_dim + 1));
         barycentric[pos_dim - rank[i]] += delta;
         barycentric[pos_dim + 1 - rank[i]] -= delta;
     }
@@ -1411,7 +1414,7 @@ double_backward_from_positions_gpu_2(
     // dL/dV = dL/dP * dP/dE * dE/dB * dB/dV
     //STARTING
     // dP/dE 
-    float dL_delevated[pos_dim + 1]{0.0f};
+    float dL_delevated[pos_dim + 1]{0};
     //-------hardocded for 3 positions----------
     // dL_delevated[0] =   grad_p_cur[0] * scale_factor[level][0] + 
     //                     grad_p_cur[1] * scale_factor[level][1] +
@@ -1447,7 +1450,7 @@ double_backward_from_positions_gpu_2(
         dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
     }
     // dE/dB
-    float dL_dbarycentric[pos_dim + 2]{0.0f};
+    float dL_dbarycentric[pos_dim + 2]{0};
     //in the forward pass we did:
     // dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
     // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
@@ -1460,13 +1463,13 @@ double_backward_from_positions_gpu_2(
     //So now we do this
     #pragma unroll
     for (int i = 0; i <= pos_dim; i++) {
-        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0f / (pos_dim + 1));
-        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0f / (pos_dim + 1));
+        dL_dbarycentric[pos_dim - rank[i]] += dL_delevated[i]* (1.0 / (pos_dim + 1));
+        dL_dbarycentric[pos_dim + 1 - rank[i]] -= dL_delevated[i]* (1.0 / (pos_dim + 1));
     }
     // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
     dL_dbarycentric[0] += dL_dbarycentric[pos_dim + 1];
     //push gradient into values_lattice and grad_sliced
-    float grad_grad_sliced_val_cur[val_dim]{0.0f};
+    float grad_grad_sliced_val_cur[val_dim]{0};
     for (int remainder = 0; remainder <= pos_dim; remainder++) {
         //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
         // Compute the location of the lattice point explicitly (all but

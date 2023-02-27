@@ -107,5 +107,5 @@ iters_to_measure=30
 
 inference()
 backward_towards_lattice()
-# backward_towards_lattice_and_pos()
+backward_towards_lattice_and_pos()
 
