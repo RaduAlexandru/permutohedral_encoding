@@ -55,6 +55,17 @@ class PermutoEncoding(torch.nn.Module):
 
 		nr_positions=positions.shape[0]
 
+		# pad to multiple of 128 bytes in order to enable coalesced accesses
+		# nr_bytes_per_col=nr_positions*4
+		# def round_to_multiple(number, multiple):
+		# 	return multiple * round(number / multiple)
+		# nr_bytes_per_col=round_to_multiple(nr_bytes_per_col,128)
+		# nr_positions_padded=int(nr_bytes_per_col/4)
+		# #pad
+		# if nr_positions!=nr_positions_padded:
+		# 	positions_pad=torch.nn.functional.pad(positions, [0, 0, 0, nr_positions_padded - nr_positions])	
+
+
 
 		# positions=positions.transpose(0,1).contiguous().transpose(0,1)
 
