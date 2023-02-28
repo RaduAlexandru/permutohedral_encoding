@@ -48,8 +48,6 @@ class PermutoEncoding(torch.nn.Module):
 		self.lattice=_C.EncodingWrapper.create(self.pos_dim, self.nr_feat_per_level, self.fixed_params)
 
 
-		#the first time we run the module we set some constant on the gpu. this a somewhat costly oepration because it requires a sync to cpu. so we do it only once
-		self.lattice.copy_to_constant_mem(self.fixed_params)
 		
 	def forward(self, positions, anneal_window=None):
 

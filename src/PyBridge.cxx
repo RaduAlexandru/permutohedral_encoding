@@ -38,7 +38,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     .def("forward", &EncodingWrapper::forward )
     .def("backward", &EncodingWrapper::backward )
     .def("double_backward_from_positions", &EncodingWrapper::double_backward_from_positions )
-    .def("copy_to_constant_mem", &EncodingWrapper::copy_to_constant_mem )
     ;
 
     

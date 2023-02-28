@@ -23,6 +23,8 @@ template<uint32_t POS_DIM, uint32_t NR_FEAT_PER_LEVEL>
 Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::Encoding(const EncodingFixedParams& fixed_params):
     m_fixed_params(fixed_params)
     {
+
+    this->copy_to_constant_mem(fixed_params);
 }
 
 
