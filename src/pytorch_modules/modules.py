@@ -53,27 +53,10 @@ class PermutoEncoding(torch.nn.Module):
 
 		nr_positions=positions.shape[0]
 
-		# pad to multiple of 128 bytes in order to enable coalesced accesses
-		# nr_bytes_per_col=nr_positions*4
-		# def round_to_multiple(number, multiple):
-		# 	return multiple * round(number / multiple)
-		# nr_bytes_per_col=round_to_multiple(nr_bytes_per_col,128)
-		# nr_positions_padded=int(nr_bytes_per_col/4)
-		# #pad
-		# if nr_positions!=nr_positions_padded:
-		# 	positions_pad=torch.nn.functional.pad(positions, [0, 0, 0, nr_positions_padded - nr_positions])	
-
-
 
 		# positions=positions.transpose(0,1).contiguous().transpose(0,1)
 
 
-
-
-
-
-		# check for posdim
-		assert positions.shape[1] == self.pos_dim,"Pos dim for the lattice doesn't correspond with the position of the points."
 
 		if anneal_window is None:
 			anneal_window=self.anneal_window
@@ -85,8 +68,6 @@ class PermutoEncoding(torch.nn.Module):
 		require_positions_grad=  positions.requires_grad and torch.is_grad_enabled()
 
 
-		# print("self.per_lvl_multiplier", self.per_lvl_multiplier.min(), self.per_lvl_multiplier.max())
-		# print("per_lvl_multiplier",self.per_lvl_multiplier)
 
 		sliced_values= PermutoEncodingFunc.apply(self.lattice, self.lattice_values, positions, anneal_window, require_lattice_values_grad, require_positions_grad)
 
