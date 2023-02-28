@@ -774,7 +774,8 @@ backward_gpu_only_pos(
         // atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
         #pragma unroll
         for(int i=0; i<pos_dim; i++){
-            atomicAdd(&positions_grad[idx][i], dL_dPos[i]  );
+            // atomicAdd(&positions_grad[idx][i], dL_dPos[i]  );
+            atomicAdd(&positions_grad[i][idx], dL_dPos[i]  );
         }
         //Cannot be done like this because the sums into the positions grad may come from multiple levels so they need to be atomic
         // positions_grad[idx][0]=dL_dPos[0];

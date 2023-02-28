@@ -165,7 +165,8 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
     Tensor positions_grad; //dL/dPos
     if (input.m_require_positions_grad){
         // positions_grad=torch::empty({ nr_resolutions, nr_positions, pos_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
-        positions_grad=torch::zeros({ nr_positions, pos_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+        // positions_grad=torch::zeros({ nr_positions, pos_dim },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
+        positions_grad=torch::zeros({ pos_dim, nr_positions },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
     }else{
         // positions_grad=torch::empty({ 1,1,1 },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
         positions_grad=torch::empty({ 1,1 },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
@@ -218,6 +219,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
     // positions_grad=positions_grad.sum(0);
 
     lattice_values_monolithic_grad=lattice_values_monolithic_grad.permute({0,2,1});
+    positions_grad=positions_grad.transpose(0,1); 
     // torch::cuda::synchronize();
     // auto t2 = std::chrono::high_resolution_clock::now();
     // std::cout << "backward took "
