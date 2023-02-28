@@ -38,9 +38,6 @@ class PermutoEncoding(torch.nn.Module):
 		self.anneal_window=torch.ones((nr_levels)).cuda()
 
 
-		#per_lvl multiplier. Makes the convergence slightly faster as it can easily dampen frequencies that are not required for the current scene
-		#howver also makes the slicing almost twice as slow
-		# self.per_lvl_multiplier=torch.nn.Parameter( torch.ones((nr_levels)).cuda() )
 
 
 		#make the lattice wrapper
