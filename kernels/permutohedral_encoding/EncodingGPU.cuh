@@ -12,8 +12,9 @@
 // #define LATTICE_HALF_PRECISION 0
 
 
-__constant__ float random_shift_constant[256];
-__constant__ float scale_factor_constant[256];
+//cannot really use this the way I intended because it seems to shared between different encodings, so different objects of the same class
+// __constant__ float random_shift_constant[256];
+// __constant__ float scale_factor_constant[256];
 
 
 
@@ -129,7 +130,8 @@ forward_gpu(
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
-        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -310,7 +312,8 @@ backward_gpu(
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
-        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -426,7 +429,6 @@ backward_gpu(
     //     //so dS/dB0 is just W*V0
     //     float dL_dbarycentric[pos_dim + 2]{0.0f};
     //     for (int remainder = 0; remainder <= pos_dim; remainder++) {
-    //         //TODO maybe this can be sped up by doing it in the same loop as the lattice values gradient
     //         // Compute the location of the lattice point explicitly (all but
     //         // the last coordinate - it's redundant because they sum to zero)
     //         #pragma unroll
@@ -446,8 +448,6 @@ backward_gpu(
     //         dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur.y;
 
     //     }
-    //     // if(debug) printf("grad sliced is %f, %f\n", grad_sliced_val_cur[0], grad_sliced_val_cur[1]);
-    //     // if(debug) printf("dL_dbarycentric[0] %f, dL_dbarycentric[1] %f, dL_dbarycentric[2] %f, dL_dbarycentric[3] %f\n", dL_dbarycentric[0], dL_dbarycentric[1], dL_dbarycentric[2], dL_dbarycentric[3]);
 
     //     //dL/dE  = dL/dB *dB/dE
     //     //In the forward pass of computing B from E there is this wraparound line of barycentric[0] += 1.0 + barycentric[pos_dim + 1];
@@ -463,7 +463,6 @@ backward_gpu(
     //         dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0f / (pos_dim + 1));
     //         dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0f / (pos_dim + 1));
     //     }
-    //     // if(debug) printf("dL_delevated[0] %f, dL_delevated[1] %f, dL_delevated[2] %f, dL_delevated[3] %f\n", dL_delevated[0], dL_delevated[1], dL_delevated[2], dL_delevated[3]);
 
     //     //dL/dPos = dL/dE * dE/dPos
     //     float dL_dPos[pos_dim]{0.0f};
@@ -474,38 +473,37 @@ backward_gpu(
     //     //dEw/dPz=-3Sz
     //     //So we just accumulate these values inot dL_dPos
     //     //x
-    //     // dL_dPos[0]= dL_delevated[0]* scale_factor[level][0] +  
-    //     //             dL_delevated[1]* (-scale_factor[level][0]);
-    //     // //y
-    //     // dL_dPos[1]= dL_delevated[0]* scale_factor[level][1] +  
-    //     //             dL_delevated[1]* scale_factor[level][1] +
-    //     //             dL_delevated[2]* (-2*scale_factor[level][1]);
-    //     // //z
-    //     // dL_dPos[2]= dL_delevated[0]* scale_factor[level][2] + 
-    //     //             dL_delevated[1]* scale_factor[level][2] +
-    //     //             dL_delevated[2]* scale_factor[level][2] +
-    //     //             dL_delevated[3]* (-3*scale_factor[level][2]);
+    //     dL_dPos[0]= dL_delevated[0]* scale_factor[level][0] +  
+    //                 dL_delevated[1]* (-scale_factor[level][0]);
+    //     //y
+    //     dL_dPos[1]= dL_delevated[0]* scale_factor[level][1] +  
+    //                 dL_delevated[1]* scale_factor[level][1] +
+    //                 dL_delevated[2]* (-2*scale_factor[level][1]);
+    //     //z
+    //     dL_dPos[2]= dL_delevated[0]* scale_factor[level][2] + 
+    //                 dL_delevated[1]* scale_factor[level][2] +
+    //                 dL_delevated[2]* scale_factor[level][2] +
+    //                 dL_delevated[3]* (-3*scale_factor[level][2]);
     //     //do it in a loop so as to support various pos_dims
-    //     for(int i=0; i<pos_dim; i++){
-    //         #pragma unroll
-    //         for(int j=0; j<=i; j++){
-    //             // dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
-    //             dL_dPos[i]+=dL_delevated[j]*scale_factor_constant[level*pos_dim + i];
-    //         }
-    //     }
-    //     #pragma unroll
-    //     for(int i=0; i<pos_dim; i++){
-    //         dL_dPos[i]-=dL_delevated[i+1] * scale_factor_constant[level*pos_dim + i] * (i+1);
-    //     } 
-    //     // if(debug) printf("dL_dPos[0] %f, dL_dPos[1] %f, dL_dPos[2] %f\n", dL_dPos[0], dL_dPos[1], dL_dPos[2]);
+    //     // for(int i=0; i<pos_dim; i++){
+    //     //     #pragma unroll
+    //     //     for(int j=0; j<=i; j++){
+    //     //         // dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
+    //     //         dL_dPos[i]+=dL_delevated[j]*scale_factor_constant[level*pos_dim + i];
+    //     //     }
+    //     // }
+    //     // #pragma unroll
+    //     // for(int i=0; i<pos_dim; i++){
+    //     //     dL_dPos[i]-=dL_delevated[i+1] * scale_factor_constant[level*pos_dim + i] * (i+1);
+    //     // }
     //     //finish
-    //     // printf("dL_dPos[0] %f \n",dL_dPos[0]);
     //     // atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
     //     // atomicAdd(&positions_grad[idx][1], dL_dPos[1]  );
     //     // atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
     //     #pragma unroll
     //     for(int i=0; i<pos_dim; i++){
-    //         atomicAdd(&positions_grad[idx][i], dL_dPos[i]  );
+    //         // atomicAdd(&positions_grad[idx][i], dL_dPos[i]  );
+    //         atomicAdd(&positions_grad[i][idx], dL_dPos[i]  );
     //     }
     //     //Cannot be done like this because the sums into the positions grad may come from multiple levels so they need to be atomic
     //     // positions_grad[idx][0]=dL_dPos[0];
@@ -520,7 +518,7 @@ backward_gpu(
     //     //     positions_grad[level][idx][i]=dL_dPos[i];
     //     // }
 
-    // }
+    // } 
 
    
    
@@ -579,7 +577,8 @@ backward_gpu_only_pos(
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
-        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -729,13 +728,14 @@ backward_gpu_only_pos(
         for(int i=0; i<pos_dim; i++){
             #pragma unroll
             for(int j=0; j<=i; j++){
-                // dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
-                dL_dPos[i]+=dL_delevated[j]*scale_factor_constant[level*pos_dim + i];
+                dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
+                // dL_dPos[i]+=dL_delevated[j]*scale_factor_constant[level*pos_dim + i];
             }
         }
         #pragma unroll
         for(int i=0; i<pos_dim; i++){
-            dL_dPos[i]-=dL_delevated[i+1] * scale_factor_constant[level*pos_dim + i] * (i+1);
+            dL_dPos[i]-=dL_delevated[i+1] * scale_factor[level][i] * (i+1);
+            // dL_dPos[i]-=dL_delevated[i+1] * scale_factor_constant[level*pos_dim + i] * (i+1);
         }
         //finish
         // atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
@@ -819,7 +819,8 @@ double_backward_from_positions_gpu(
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
-        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -941,8 +942,8 @@ double_backward_from_positions_gpu(
     // }
     // so the gradient from grad_p_cur[i] will go into each elevated <= i. Afterwards we have another loop which passes the gradient from grad_p_cur[i] into elevated[i+1]
     for(int i=0; i<pos_dim; i++){
-        // float grad=grad_p_cur[i]*scale_factor[level][i];
-        float grad=grad_p_cur[i]*scale_factor_constant[level*pos_dim + i];
+        float grad=grad_p_cur[i]*scale_factor[level][i];
+        // float grad=grad_p_cur[i]*scale_factor_constant[level*pos_dim + i];
         #pragma unroll
         for(int j=0; j<=i; j++){
             dL_delevated[j]+=grad;
@@ -950,7 +951,8 @@ double_backward_from_positions_gpu(
     }
     #pragma unroll
     for(int i=0; i<pos_dim; i++){
-        dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
+        dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
+        // dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
     }
 
 
@@ -990,8 +992,10 @@ double_backward_from_positions_gpu(
         const float* fv=&lattice_values_monolithic[level][idx_val][0];
         const float2 val_lattice_vertex=reinterpret_cast<const float2*>( fv )[0];
        
-        atomicAdd(&lattice_values_monolithic_grad[level][idx_val][0], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
-        atomicAdd(&lattice_values_monolithic_grad[level][idx_val][1], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
+        // atomicAdd(&lattice_values_monolithic_grad[level][idx_val][0], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
+        // atomicAdd(&lattice_values_monolithic_grad[level][idx_val][1], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
+        atomicAdd(&lattice_values_monolithic_grad[level][0][idx_val], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[0]  );
+        atomicAdd(&lattice_values_monolithic_grad[level][1][idx_val], dL_dbarycentric[remainder]* w_lvl * grad_sliced_val_cur[1]  );
 
 
         // push gradient into grad_sliced_val_cur
@@ -1057,7 +1061,8 @@ double_backward_from_positions_gpu_1(
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
-        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -1179,8 +1184,8 @@ double_backward_from_positions_gpu_1(
     // }
     // so the gradient from grad_p_cur[i] will go into each elevated <= i. Afterwards we have another loop which passes the gradient from grad_p_cur[i] into elevated[i+1]
     for(int i=0; i<pos_dim; i++){
-        // float grad=grad_p_cur[i]*scale_factor[level][i];
-        float grad=grad_p_cur[i]*scale_factor_constant[level*pos_dim + i];
+        float grad=grad_p_cur[i]*scale_factor[level][i];
+        // float grad=grad_p_cur[i]*scale_factor_constant[level*pos_dim + i];
         #pragma unroll
         for(int j=0; j<=i; j++){
             dL_delevated[j]+=grad;
@@ -1188,8 +1193,8 @@ double_backward_from_positions_gpu_1(
     }
     #pragma unroll
     for(int i=0; i<pos_dim; i++){
-        // dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
-        dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
+        dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
+        // dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
     }
     // dE/dB
     float dL_dbarycentric[pos_dim + 2]{0.0f};
@@ -1299,7 +1304,8 @@ double_backward_from_positions_gpu_2(
     float sm = 0;
     #pragma unroll
     for (int i = pos_dim; i > 0; i--) {
-        float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        // float cf = (pos[i-1] +random_shift_constant[level*pos_dim + i-1]  ) * scale_factor_constant[level*pos_dim + i-1];
+        float cf = (pos[i-1] +random_shift_monolithic[level][i-1]  ) * scale_factor[level][i-1];
         elevated[i] = sm - i * cf;
         sm += cf;
     }
@@ -1415,8 +1421,8 @@ double_backward_from_positions_gpu_2(
     // }
     // so the gradient from grad_p_cur[i] will go into each elevated <= i. Afterwards we have another loop which passes the gradient from grad_p_cur[i] into elevated[i+1]
     for(int i=0; i<pos_dim; i++){
-        // float grad=grad_p_cur[i]*scale_factor[level][i];
-        float grad=grad_p_cur[i]*scale_factor_constant[level*pos_dim + i];
+        float grad=grad_p_cur[i]*scale_factor[level][i];
+        // float grad=grad_p_cur[i]*scale_factor_constant[level*pos_dim + i];
         #pragma unroll
         for(int j=0; j<=i; j++){
             dL_delevated[j]+=grad;
@@ -1424,8 +1430,8 @@ double_backward_from_positions_gpu_2(
     }
     #pragma unroll
     for(int i=0; i<pos_dim; i++){
-        // dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
-        dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
+        dL_delevated[i+1]-=grad_p_cur[i] * scale_factor[level][i] * (i+1);
+        // dL_delevated[i+1]-=grad_p_cur[i] * scale_factor_constant[level*pos_dim + i] * (i+1);
     }
     // dE/dB
     float dL_dbarycentric[pos_dim + 2]{0.0f};

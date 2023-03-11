@@ -114,7 +114,7 @@ public:
     
 
     //new things
-    void copy_to_constant_mem(const EncodingFixedParams& fixed_params);
+    // void copy_to_constant_mem(const EncodingFixedParams& fixed_params);
    
 
 private:
