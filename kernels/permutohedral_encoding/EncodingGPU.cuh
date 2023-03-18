@@ -416,109 +416,110 @@ backward_gpu(
 
 
 
-    // if(require_positions_grad){
-    //     //We have from upstrema grad the dL/dS which is the derivative of the loss wrt to the sliced value
-    //     //If we require positions grad we want to obtain dL/dPos
-    //     //dL/dPos = dL/dS *dS/dB * dB/dE * dE/dPos
-    //     //We need dS/dB which is the derivative of the sliced value wrt to the barycentric coords
-    //     //We need dB/dE which is the derivative of the barycentric wrt to the elevated value
-    //     //We need dE/dP which is the derivative of the elevated wrt to the position in xyz
+//    if(require_positions_grad){
+//         //We have from upstrema grad the dL/dS which is the derivative of the loss wrt to the sliced value
+//         //If we require positions grad we want to obtain dL/dPos
+//         //dL/dPos = dL/dS *dS/dB * dB/dE * dE/dPos
+//         //We need dS/dB which is the derivative of the sliced value wrt to the barycentric coords
+//         //We need dB/dE which is the derivative of the barycentric wrt to the elevated value
+//         //We need dE/dP which is the derivative of the elevated wrt to the position in xyz
 
-    //     //dL/dB  = dL/dS *dS/dB 
-    //     //foward pass is just S=B0*WLvl*V0 + B1*WLvl*V1 etc
-    //     //so dS/dB0 is just W*V0
-    //     float dL_dbarycentric[pos_dim + 2]{0.0f};
-    //     for (int remainder = 0; remainder <= pos_dim; remainder++) {
-    //         // Compute the location of the lattice point explicitly (all but
-    //         // the last coordinate - it's redundant because they sum to zero)
-    //         #pragma unroll
-    //         for (int i = 0; i < pos_dim; i++) {
-    //             key[i] = rem0[i] + remainder;
-    //             if (rank[i] > pos_dim - remainder)
-    //                 key[i] -= (pos_dim + 1);
-    //         }
-    //         // Retrieve pointer to the value at this vertex.
-    //         int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
+//         //dL/dB  = dL/dS *dS/dB 
+//         //foward pass is just S=B0*WLvl*V0 + B1*WLvl*V1 etc
+//         //so dS/dB0 is just W*V0
+//         float dL_dbarycentric[pos_dim + 2]{0.0f};
+//         for (int remainder = 0; remainder <= pos_dim; remainder++) {
+//             // Compute the location of the lattice point explicitly (all but
+//             // the last coordinate - it's redundant because they sum to zero)
+//             #pragma unroll
+//             for (int i = 0; i < pos_dim; i++) {
+//                 key[i] = rem0[i] + remainder;
+//                 if (rank[i] > pos_dim - remainder)
+//                     key[i] -= (pos_dim + 1);
+//             }
+//             // Retrieve pointer to the value at this vertex.
+//             int idx_val=idx_hash_with_collision<pos_dim>(key, lattice_capacity);
 
-    //         //Load the value for this vertex
-    //         const float* fv=&lattice_values_monolithic[level][idx_val][0];
-    //         const float2 val_lattice_vertex=reinterpret_cast<const float2*>( fv )[0];
-    //         //add to the dL_d_barycentric
-    //         dL_dbarycentric[remainder]+=val_lattice_vertex.x*w_lvl   * grad_sliced_val_cur.x;
-    //         dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur.y;
+//             //Load the value for this vertex
+//             const float* fv=&lattice_values_monolithic[level][idx_val][0];
+//             const float2 val_lattice_vertex=reinterpret_cast<const float2*>( fv )[0];
+//             //add to the dL_d_barycentric
+//             dL_dbarycentric[remainder]+=val_lattice_vertex.x*w_lvl   * grad_sliced_val_cur.x;
+//             dL_dbarycentric[remainder]+=val_lattice_vertex.y*w_lvl   * grad_sliced_val_cur.y;
 
-    //     }
+//         }
 
-    //     //dL/dE  = dL/dB *dB/dE
-    //     //In the forward pass of computing B from E there is this wraparound line of barycentric[0] += 1.0 + barycentric[pos_dim + 1];
-    //     // barycentric[0] = barycentric[0]+ 1.0 + barycentric[pos_dim + 1];
-    //     //I think this means that the gradient of also added to barycentric{pos_dim+1}
-    //     //TODO check for correctness here
-    //     dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
-    //     // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
-    //     //Now we need to accumulate gradient into elevated from from each barycentric that the particlar elevated affected
-    //     float dL_delevated[pos_dim + 1]{0.0f};
-    //     #pragma unroll
-    //     for (int i = 0; i <= pos_dim; i++) {
-    //         dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0f / (pos_dim + 1));
-    //         dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0f / (pos_dim + 1));
-    //     }
+//         //dL/dE  = dL/dB *dB/dE
+//         //In the forward pass of computing B from E there is this wraparound line of barycentric[0] += 1.0 + barycentric[pos_dim + 1];
+//         // barycentric[0] = barycentric[0]+ 1.0 + barycentric[pos_dim + 1];
+//         //I think this means that the gradient of also added to barycentric{pos_dim+1}
+//         //TODO check for correctness here
+//         dL_dbarycentric[pos_dim + 1] += dL_dbarycentric[0]; //order here is important btw, we first add B0 to B5 and only afterwards we double B0
+//         // dL_dbarycentric[0]=dL_dbarycentric[0]*2;
+//         //Now we need to accumulate gradient into elevated from from each barycentric that the particlar elevated affected
+//         float dL_delevated[pos_dim + 1]{0.0f};
+//         #pragma unroll
+//         for (int i = 0; i <= pos_dim; i++) {
+//             dL_delevated[i]+=  dL_dbarycentric[pos_dim - rank[i]] * (1.0f / (pos_dim + 1));
+//             dL_delevated[i]-=  dL_dbarycentric[pos_dim + 1 - rank[i]] * (1.0f / (pos_dim + 1));
+//         }
 
-    //     //dL/dPos = dL/dE * dE/dPos
-    //     float dL_dPos[pos_dim]{0.0f};
-    //     //I unrolles the loop that computes E from P and I got some local derivatives like 
-    //     //dEx/dPx=Sx  dEx/dPy=Sy
-    //     //dEy/dPx=-Sx  dEy/dPy=Sy  dEy/dPz=Sz
-    //     //dEz/dPy=-2Sy  dEz/dPz=Sz
-    //     //dEw/dPz=-3Sz
-    //     //So we just accumulate these values inot dL_dPos
-    //     //x
-    //     dL_dPos[0]= dL_delevated[0]* scale_factor[level][0] +  
-    //                 dL_delevated[1]* (-scale_factor[level][0]);
-    //     //y
-    //     dL_dPos[1]= dL_delevated[0]* scale_factor[level][1] +  
-    //                 dL_delevated[1]* scale_factor[level][1] +
-    //                 dL_delevated[2]* (-2*scale_factor[level][1]);
-    //     //z
-    //     dL_dPos[2]= dL_delevated[0]* scale_factor[level][2] + 
-    //                 dL_delevated[1]* scale_factor[level][2] +
-    //                 dL_delevated[2]* scale_factor[level][2] +
-    //                 dL_delevated[3]* (-3*scale_factor[level][2]);
-    //     //do it in a loop so as to support various pos_dims
-    //     // for(int i=0; i<pos_dim; i++){
-    //     //     #pragma unroll
-    //     //     for(int j=0; j<=i; j++){
-    //     //         // dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
-    //     //         dL_dPos[i]+=dL_delevated[j]*scale_factor_constant[level*pos_dim + i];
-    //     //     }
-    //     // }
-    //     // #pragma unroll
-    //     // for(int i=0; i<pos_dim; i++){
-    //     //     dL_dPos[i]-=dL_delevated[i+1] * scale_factor_constant[level*pos_dim + i] * (i+1);
-    //     // }
-    //     //finish
-    //     // atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
-    //     // atomicAdd(&positions_grad[idx][1], dL_dPos[1]  );
-    //     // atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
-    //     #pragma unroll
-    //     for(int i=0; i<pos_dim; i++){
-    //         // atomicAdd(&positions_grad[idx][i], dL_dPos[i]  );
-    //         atomicAdd(&positions_grad[i][idx], dL_dPos[i]  );
-    //     }
-    //     //Cannot be done like this because the sums into the positions grad may come from multiple levels so they need to be atomic
-    //     // positions_grad[idx][0]=dL_dPos[0];
-    //     // positions_grad[idx][1]=dL_dPos[1];
-    //     // positions_grad[idx][2]=dL_dPos[2];
+//         //dL/dPos = dL/dE * dE/dPos
+//         float dL_dPos[pos_dim]{0.0f};
+//         //I unrolles the loop that computes E from P and I got some local derivatives like 
+//         //dEx/dPx=Sx  dEx/dPy=Sy
+//         //dEy/dPx=-Sx  dEy/dPy=Sy  dEy/dPz=Sz
+//         //dEz/dPy=-2Sy  dEz/dPz=Sz
+//         //dEw/dPz=-3Sz
+//         //So we just accumulate these values inot dL_dPos
+//         //x
+//         // dL_dPos[0]= dL_delevated[0]* scale_factor[level][0] +  
+//         //             dL_delevated[1]* (-scale_factor[level][0]);
+//         // //y
+//         // dL_dPos[1]= dL_delevated[0]* scale_factor[level][1] +  
+//         //             dL_delevated[1]* scale_factor[level][1] +
+//         //             dL_delevated[2]* (-2*scale_factor[level][1]);
+//         // //z
+//         // dL_dPos[2]= dL_delevated[0]* scale_factor[level][2] + 
+//         //             dL_delevated[1]* scale_factor[level][2] +
+//         //             dL_delevated[2]* scale_factor[level][2] +
+//         //             dL_delevated[3]* (-3*scale_factor[level][2]);
+//         //do it in a loop so as to support various pos_dims
+//         for(int i=0; i<pos_dim; i++){
+//             #pragma unroll
+//             for(int j=0; j<=i; j++){
+//                 dL_dPos[i]+=dL_delevated[j]*scale_factor[level][i];
+//                 // dL_dPos[i]+=dL_delevated[j]*scale_factor_constant[level*pos_dim + i];
+//             }
+//         }
+//         #pragma unroll
+//         for(int i=0; i<pos_dim; i++){
+//             dL_dPos[i]-=dL_delevated[i+1] * scale_factor[level][i] * (i+1);
+//             // dL_dPos[i]-=dL_delevated[i+1] * scale_factor_constant[level*pos_dim + i] * (i+1);
+//         }
+//         //finish
+//         // atomicAdd(&positions_grad[idx][0], dL_dPos[0]  );
+//         // atomicAdd(&positions_grad[idx][1], dL_dPos[1]  );
+//         // atomicAdd(&positions_grad[idx][2], dL_dPos[2]  );
+//         #pragma unroll
+//         for(int i=0; i<pos_dim; i++){
+//             // atomicAdd(&positions_grad[idx][i], dL_dPos[i]  );
+//             atomicAdd(&positions_grad[i][idx], dL_dPos[i]  );
+//         }
+//         //Cannot be done like this because the sums into the positions grad may come from multiple levels so they need to be atomic
+//         // positions_grad[idx][0]=dL_dPos[0];
+//         // positions_grad[idx][1]=dL_dPos[1];
+//         // positions_grad[idx][2]=dL_dPos[2];
 
-    //     // positions_grad[level][idx][0]=dL_dPos[0];
-    //     // positions_grad[level][idx][1]=dL_dPos[1];
-    //     // positions_grad[level][idx][2]=dL_dPos[2];
-    //     // #pragma unroll
-    //     // for(int i=0; i<pos_dim; i++){
-    //     //     positions_grad[level][idx][i]=dL_dPos[i];
-    //     // }
+//         // positions_grad[level][idx][0]=dL_dPos[0];
+//         // positions_grad[level][idx][1]=dL_dPos[1];
+//         // positions_grad[level][idx][2]=dL_dPos[2];
+//         // #pragma unroll
+//         // for(int i=0; i<pos_dim; i++){
+//         //     positions_grad[level][idx][i]=dL_dPos[i];
+//         // }
 
-    // } 
+//     } 
 
    
    
