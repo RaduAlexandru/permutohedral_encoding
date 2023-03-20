@@ -79,8 +79,8 @@ To be noted that currently we only support floating point precision so for a fai
 
    [EasyPBR]: <https://github.com/RaduAlexandru/easy_pbr>
    [DataLoaders]: <https://github.com/RaduAlexandru/data_loaders>
-   [InstantNGP]: (https://github.com/NVlabs/instant-ngp)
-   [tiny-cudan-nn]: (https://github.com/NVlabs/tiny-cuda-nn) 
+   [InstantNGP]: <https://github.com/NVlabs/instant-ngp>
+   [tiny-cudan-nn]: <https://github.com/NVlabs/tiny-cuda-nn> 
 
 
 
