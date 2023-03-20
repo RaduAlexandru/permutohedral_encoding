@@ -40,7 +40,7 @@ points=torch.rand(nr_points, pos_dim).cuda()
 iter_nr=0
 while True:
 
-
+    #create a 1D annealing window that performs coarse-to-fine optimization
     window=c2f( permuto_enc.map_range_val(iter_nr, 0.0, nr_iters_for_c2f, 0.3, 1.0   ) )
 
     #encode
