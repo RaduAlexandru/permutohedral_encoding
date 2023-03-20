@@ -1,9 +1,9 @@
 # Permutohedral Encoding 
 
-This contains the official implementation of the permutohedral encoding which was originally proposed in [HashSDF: Accurate Implicit Surfaces with Fast Local Features on Permutohedral Lattices](https://arxiv.org/abs/2211.12562) 
+This contains the official implementation of the permutohedral encoding which was originally proposed in [PermutoSDF: Accurate Implicit Surfaces with Fast Local Features on Permutohedral Lattices](https://arxiv.org/abs/2211.12562) 
 
 Permutohedral encoding is used to obtain high-dimensional features from low-dimensionsal space. The features can then be used by a small MLP for decoding density, SDF, RGB or whatever quantity is needed. The encoding works by interpolating features from a multi-resolution permutohedral hash-map.
-The permutohedral encoding is similar in spirit to the hash-map encoding of [InstantNGP](https://github.com/NVlabs/instant-ngp) but it scales linearly with dimensionality instead of exponentially. This makes it significantly faster to optimize for dimensions 3 and higher. 
+The permutohedral encoding is similar in spirit to the hash-map encoding of [InstantNGP] but it scales linearly with dimensionality instead of exponentially. This makes it significantly faster to optimize for dimensions 3 and higher. 
 
 
 <p align="middle">
@@ -40,6 +40,8 @@ features=encoding(points)
 #sdf=mlp(features) 
 ```
 
+A more complete example on how to use the permutohedral encoding is shown in `./examples/train_toy_example.py`
+
 <!--
 ### Example 
 
@@ -60,33 +62,25 @@ $ make #this runs python install for the current user
 This requires that PyTorch and CUDA are installed. 
 
 
+### Performance
+
+
+The permutohedral lattice scales linearly wrt. input dimensionality in contrast to exponentially in the case of cubical voxels. This make it particularly attractive for problems dealing with 3D or 4D data. Higher dimensions are also readily supported. 
+<p align="middle">
+  <img src="imgs/perf.png" width="550" />
+</p>
+
+The script `./examples/performance.py` compares the throughput between permutohedral encoding and the cubical hash-encoding from [tiny-cudan-nn].
+To be noted that currently we only support floating point precision so for a fair comparison [tiny-cudan-nn] is compiled without the half-float operations.
 
 
 
 
-
-<!-- ### Dependencies 
-```sh
-$ sudo python3 -m pip install  --verbose --no-cache-dir  torch-scatter==1.4.0 
-```
-You will also need to install both [EasyPBR] and [DataLoaders] with the intructions on the respective pages.
-
-
-### Build and install: 
-```sh
-$ git clone --recursive https://git.ais.uni-bonn.de/rosu/lattice_net.git
-$ cd lattice_net
-$ make
-```
-
-### Training 
-For training start the script: 
-```sh
-$ latticenet_py/lnn_train.py 
-``` -->
 
    [EasyPBR]: <https://github.com/RaduAlexandru/easy_pbr>
    [DataLoaders]: <https://github.com/RaduAlexandru/data_loaders>
+   [InstantNGP]: (https://github.com/NVlabs/instant-ngp)
+   [tiny-cudan-nn]: (https://github.com/NVlabs/tiny-cuda-nn) 
 
 
 
