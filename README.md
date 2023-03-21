@@ -10,7 +10,7 @@ The permutohedral encoding is similar in spirit to the hash-map encoding of [Ins
   <img src="imgs/drawing5_cropped_2_c_enchanced3c.png" width="550" />
 </p>
 
-### Usage
+# Usage
 
 The permutohedral encoding can be used directly in PyTorch:
 
@@ -49,7 +49,7 @@ SDF
 -->
 
 
-### Install
+# Install
 
 One can easily install it as a python package by using
 
@@ -62,7 +62,7 @@ $ make #this runs python install for the current user
 This requires that PyTorch and CUDA are installed. 
 
 
-### Performance
+# Performance
 
 
 The permutohedral lattice scales linearly wrt. input dimensionality in contrast to exponentially in the case of cubical voxels. This make it particularly attractive for problems dealing with 3D or 4D data. Higher dimensions are also readily supported. 
