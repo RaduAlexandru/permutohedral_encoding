@@ -74,8 +74,17 @@ The script `./examples/performance.py` compares the throughput between permutohe
 To be noted that currently we only support floating point precision so for a fair comparison [tiny-cudan-nn] is compiled without the half-float operations.
 
 
+## Citation
 
-
+```
+@article{rosu2023permutosdf,
+    title={PermutoSDF: Fast Multi-View Reconstruction with 
+            Implicit Surfaces using Permutohedral Lattices  },
+    author={Radu Alexandru Rosu and Sven Behnke},
+    journal={CVPR},
+    year={2023}
+}
+```
 
    [EasyPBR]: <https://github.com/RaduAlexandru/easy_pbr>
    [DataLoaders]: <https://github.com/RaduAlexandru/data_loaders>

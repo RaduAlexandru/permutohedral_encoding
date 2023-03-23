@@ -1,8 +1,8 @@
 #include "permutohedral_encoding/PyBridge.h"
 
-#include <torch/extension.h>
 #include "torch/torch.h"
-#include "torch/csrc/utils/pybind.h"
+#include <torch/extension.h>
+// #include "torch/csrc/utils/pybind.h"
 
 //my stuff 
 #include "permutohedral_encoding/Encoding.cuh"
