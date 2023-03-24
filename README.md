@@ -77,7 +77,7 @@ To be noted that currently we only support floating point precision so for a fai
 ## Citation
 
 ```
-@article{rosu2023permutosdf,
+@inproceedings{rosu2023permutosdf,
     title={PermutoSDF: Fast Multi-View Reconstruction with 
             Implicit Surfaces using Permutohedral Lattices  },
     author={Radu Alexandru Rosu and Sven Behnke},
