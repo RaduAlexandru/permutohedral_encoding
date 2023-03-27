@@ -81,7 +81,7 @@ To be noted that currently we only support floating point precision so for a fai
     title={PermutoSDF: Fast Multi-View Reconstruction with 
             Implicit Surfaces using Permutohedral Lattices  },
     author={Radu Alexandru Rosu and Sven Behnke},
-    booktitle={CVPR},
+    booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
     year={2023}
 }
 ```
