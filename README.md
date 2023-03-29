@@ -2,8 +2,8 @@
 
 This contains the official implementation of the permutohedral encoding which was originally proposed in [PermutoSDF: Fast Multi-View Reconstruction with Implicit Surfaces using Permutohedral Lattices](https://radualexandru.github.io/permuto_sdf/) 
 
-Permutohedral encoding is used to obtain high-dimensional features from low-dimensionsal space. The features can then be used by a small MLP for decoding density, SDF, RGB or whatever quantity is needed. The encoding works by interpolating features from a multi-resolution permutohedral hash-map.
-The permutohedral encoding is similar in spirit to the hash-map encoding of [InstantNGP] but it scales linearly with dimensionality instead of exponentially. This makes it significantly faster to optimize for dimensions 3 and higher. 
+Permutohedral encoding is used to obtain high-dimensional features from low-dimensional space. The features can then be used by a small MLP for decoding density, SDF, RGB or whatever quantity is needed. The encoding works by interpolating features from a multi-resolution permutohedral hash-map.
+The permutohedral encoding is similar in spirit to the hash-map encoding of [InstantNGP] but it scales linearly with dimensionality instead of exponentially. This makes it significantly faster to optimize especially for higher dimensions. 
 
 
 <p align="middle">
