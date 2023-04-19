@@ -7,6 +7,7 @@
 
 
 #include "torch/torch.h"
+#include <c10/cuda/CUDAStream.h>
 
 
 //minimum input required for any call to the encoding function. Makes it easies to declare the functions since they will all at least get this as input

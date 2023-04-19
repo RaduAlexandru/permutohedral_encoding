@@ -84,7 +84,7 @@ torch::Tensor Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::forward(const EncodingInput&
     //try again with a monolithic kernel
     const dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE), (unsigned int)(nr_resolutions+nr_resolutions_extra), 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
     
-    forward_gpu<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE>>>(
+    forward_gpu<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE, 0, at::cuda::getCurrentCUDAStream()>>>(
         nr_positions, 
         lattice_capacity,
         nr_resolutions,
@@ -164,7 +164,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
     // torch::cuda::synchronize();
     // auto t1 = std::chrono::high_resolution_clock::now();
     //assumes lattice_values_monolithic_grad=torch::zeros({ nr_resolutions, val_dim, capacity },  torch::dtype(torch::kFloat32).device(torch::kCUDA, 0)  );
-    backward_gpu<POS_DIM,NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
+    backward_gpu<POS_DIM,NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK, 0, at::cuda::getCurrentCUDAStream()>>>(
         nr_positions,
         capacity, 
         input.m_lattice_values.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
@@ -182,7 +182,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::b
 
 
     if(input.m_require_positions_grad){
-        backward_gpu_only_pos<POS_DIM,NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK>>>(
+        backward_gpu_only_pos<POS_DIM,NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_BACK, 0, at::cuda::getCurrentCUDAStream()>>>(
             nr_positions,
             capacity, 
             input.m_lattice_values.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
@@ -274,7 +274,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     // auto t1 = std::chrono::high_resolution_clock::now();
     // writes gradient to lattice_values_monolithic_grad, assumes the lattice_values_monolithic_grad is tranposed so we have to transpose back afterwards
     dim3 blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)nr_resolutions, 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
-    double_backward_from_positions_gpu_1<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
+    double_backward_from_positions_gpu_1<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK, 0, at::cuda::getCurrentCUDAStream()>>>(
         nr_positions,
         capacity,
         nr_resolutions, 
@@ -303,7 +303,7 @@ std::tuple<torch::Tensor, torch::Tensor> Encoding<POS_DIM, NR_FEAT_PER_LEVEL>::d
     //writes gradient to grad_grad_sliced_values_monolithic
     //the last few resolutions might be extra resolutions so we just write zero grad there
     blocks = { (unsigned int)div_round_up(nr_positions, BLOCK_SIZE_DOUBLE_BACK), (unsigned int)(nr_resolutions+nr_resolutions_extra), 1 }; //the blocks are executed in order, first the blocks for the first resolution, then the second and so on
-    double_backward_from_positions_gpu_2<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK>>>(
+    double_backward_from_positions_gpu_2<POS_DIM, NR_FEAT_PER_LEVEL><<<blocks, BLOCK_SIZE_DOUBLE_BACK, 0, at::cuda::getCurrentCUDAStream()>>>(
         nr_positions,
         capacity, 
         nr_resolutions,
