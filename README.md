@@ -71,7 +71,7 @@ The permutohedral lattice scales linearly wrt. input dimensionality in contrast 
 </p>
 
 The script `./examples/performance.py` compares the throughput between permutohedral encoding and the cubical hash-encoding from [tiny-cudan-nn].
-To be noted that currently we only support floating point precision so for a fair comparison [tiny-cudan-nn] is compiled without the half-float operations.
+To be noted that currently we only support floating point precision so for a fair comparison [tiny-cudan-nn] is compiled without the half-float operations by disabling [here](https://github.com/NVlabs/tiny-cuda-nn/blob/a77dc53ed770dd8ea6f78951d5febe175d0045e9/include/tiny-cuda-nn/common.h#L54) Additionally, [tiny-cudan-nn] supports by default up to dimension 4. This can be increased by uncommenting the corresponding lines [here](https://github.com/NVlabs/tiny-cuda-nn/blob/a77dc53ed770dd8ea6f78951d5febe175d0045e9/include/tiny-cuda-nn/encodings/grid.h#L1448)
 
 
 ## Citation
