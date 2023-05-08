@@ -41,9 +41,25 @@ class PermutoEncoding(torch.nn.Module):
 
 
 		#make the lattice wrapper
-		self.fixed_params=_C.EncodingFixedParams(pos_dim, capacity, nr_levels, nr_feat_per_level, scale_per_level, self.random_shift_per_level, self.concat_points, self.concat_points_scaling)
-		self.lattice=_C.EncodingWrapper.create(self.pos_dim, self.nr_feat_per_level, self.fixed_params)
+		self.fixed_params, self.lattice = self._make_lattice_wrapper()
 
+	def _make_lattice_wrapper(self):
+		fixed_params=_C.EncodingFixedParams(self.pos_dim, self.capacity, self.nr_levels, self.nr_feat_per_level, self.scale_per_level, self.random_shift_per_level, self.concat_points, self.concat_points_scaling)
+		lattice=_C.EncodingWrapper.create(self.pos_dim, self.nr_feat_per_level, fixed_params)
+		return fixed_params, lattice
+
+	def __getstate__(self):
+		"""Return state values to be pickled."""
+		state = self.__dict__.copy()
+		# Avoid pickling native objects
+		del state["fixed_params"]
+		del state["lattice"]
+		return state
+
+	def __setstate__(self, state):
+		self.__dict__.update(state)
+		# Reconstruct native entries
+		self.fixed_params, self.lattice = self._make_lattice_wrapper()
 
 		
 	def forward(self, positions, anneal_window=None):
